@@ -12,7 +12,7 @@ import com.myprojects.routinemanager.data.model.Task.Companion.localDateTimeToSt
  * Репозиторий для работы с задачами и их шаблонами.
  * Выполняет обращение к DAO для операций над базой данных.
  */
-class TaskRepository(
+open class TaskRepository(
     private var taskDao: TaskDao
 ) {
     // Можно хранить шаблоны в памяти или в отдельной таблице.

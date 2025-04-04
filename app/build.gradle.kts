@@ -74,6 +74,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.firebase.crashlytics.buildtools)
     kapt(libs.androidx.room.compiler)
     // Тесты
     testImplementation(libs.junit)
@@ -85,4 +86,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation("com.google.code.gson:gson:2.10.1")
 }

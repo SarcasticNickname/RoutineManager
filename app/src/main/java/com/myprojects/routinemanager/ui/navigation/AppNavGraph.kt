@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.myprojects.routinemanager.ui.screens.AddTaskRootScreen
 import com.myprojects.routinemanager.ui.screens.TaskDetailScreen
 import com.myprojects.routinemanager.ui.screens.TaskListScreen
 import com.myprojects.routinemanager.ui.screens.AddTaskScreen
@@ -29,7 +30,8 @@ fun AppNavGraph(
                 onTaskClick = { taskId ->
                     // Переходим на экран деталей задачи, передаём ID как аргумент
                     navController.navigate("${NavRoutes.TaskDetail.route}/$taskId")
-                }
+                },
+                navController = navController
             )
         }
 
@@ -50,5 +52,13 @@ fun AppNavGraph(
                 onBack = { navController.popBackStack() }
             )
         }
+
+        composable("add_root") {
+            AddTaskRootScreen(
+                viewModel = viewModel,
+                onTaskAdded = { navController.popBackStack() }
+            )
+        }
+
     }
 }
