@@ -3,14 +3,18 @@ package com.myprojects.routinemanager.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.myprojects.routinemanager.data.model.DayTemplate
+import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.repository.TaskRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import javax.inject.Inject
 
-class DayTemplateViewModel(
-    private val repository: TaskRepository
+@HiltViewModel
+class DayTemplateViewModel @Inject constructor(
+    private val repository: DayTemplateRepository
 ) : ViewModel() {
 
     private val _weeklyTemplates = MutableStateFlow<List<DayTemplate>>(emptyList())
@@ -21,7 +25,7 @@ class DayTemplateViewModel(
 
     init {
         viewModelScope.launch {
-            repository.getAllDayTemplates().collect { allTemplates ->
+            repository.getAllTemplates().collect { allTemplates ->
                 _weeklyTemplates.value = allTemplates.filter { it.isWeekly }
                 _customTemplates.value = allTemplates.filter { !it.isWeekly }
             }
@@ -30,13 +34,13 @@ class DayTemplateViewModel(
 
     fun addTemplate(template: DayTemplate) {
         viewModelScope.launch {
-            repository.saveDayTemplate(template)
+            repository.insertTemplate(template)
         }
     }
 
     fun deleteTemplate(template: DayTemplate) {
         viewModelScope.launch {
-            repository.deleteDayTemplate(template)
+            repository.deleteTemplate(template)
         }
     }
 
@@ -50,3 +54,4 @@ class DayTemplateViewModel(
         return repository.getTemplateForWeekday(weekday)
     }
 }
+

@@ -54,15 +54,16 @@ fun TemplateItem(
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = template.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = "По умолчанию: ${template.defaultTitle}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = template.defaultTitle, style = MaterialTheme.typography.titleMedium)
+                template.defaultStartTime?.let {
+                    Text("Начало: $it", style = MaterialTheme.typography.bodySmall)
+                }
+                template.defaultDescription?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
             }
             Button(onClick = onTemplateClick) {
                 Text("Добавить")

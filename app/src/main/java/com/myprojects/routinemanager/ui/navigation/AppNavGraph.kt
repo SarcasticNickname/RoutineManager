@@ -8,46 +8,44 @@ import com.myprojects.routinemanager.ui.screens.AddTaskRootScreen
 import com.myprojects.routinemanager.ui.screens.TaskDetailScreen
 import com.myprojects.routinemanager.ui.screens.TaskListScreen
 import com.myprojects.routinemanager.ui.screens.AddTaskScreen
+import com.myprojects.routinemanager.ui.screens.DayTemplatesScreen
+import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
+import java.time.LocalDate
+import androidx.hilt.navigation.compose.hiltViewModel
 
-/**
- * Файл, в котором задаём навигационную структуру приложения.
- */
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
-    viewModel: TaskViewModel
+    taskViewModel: TaskViewModel,
+    dayTemplateViewModel: DayTemplateViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = NavRoutes.TaskList.route
     ) {
-        // Экран списка задач
         composable(NavRoutes.TaskList.route) {
             TaskListScreen(
-                viewModel = viewModel,
+                viewModel = taskViewModel,
                 onAddTaskClick = { navController.navigate(NavRoutes.AddTask.route) },
                 onTaskClick = { taskId ->
-                    // Переходим на экран деталей задачи, передаём ID как аргумент
                     navController.navigate("${NavRoutes.TaskDetail.route}/$taskId")
                 },
                 navController = navController
             )
         }
 
-        // Экран добавления задачи
         composable(NavRoutes.AddTask.route) {
             AddTaskScreen(
-                viewModel = viewModel,
+                viewModel = taskViewModel,
                 onTaskAdded = { navController.popBackStack() }
             )
         }
 
-        // Экран деталей задачи (ID задачи может передаваться через путь)
         composable("${NavRoutes.TaskDetail.route}/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
             TaskDetailScreen(
-                viewModel = viewModel,
+                viewModel = taskViewModel,
                 taskId = taskId,
                 onBack = { navController.popBackStack() }
             )
@@ -55,10 +53,26 @@ fun AppNavGraph(
 
         composable("add_root") {
             AddTaskRootScreen(
-                viewModel = viewModel,
+                viewModel = taskViewModel,
                 onTaskAdded = { navController.popBackStack() }
             )
         }
 
+        composable("day_templates?date={date}") { backStackEntry ->
+            val dateArg = backStackEntry.arguments?.getString("date")
+            val selectedDate = dateArg?.let { LocalDate.parse(it) } ?: LocalDate.now()
+
+            DayTemplatesScreen(
+                viewModel = dayTemplateViewModel,
+                onApplyTemplate = { template ->
+                    dayTemplateViewModel.applyTemplate(template, selectedDate)
+                    taskViewModel.loadTasksFor(selectedDate)
+                    navController.popBackStack()
+                },
+                onEditTemplate = { template ->
+                    // заглушка
+                }
+            )
+        }
     }
 }

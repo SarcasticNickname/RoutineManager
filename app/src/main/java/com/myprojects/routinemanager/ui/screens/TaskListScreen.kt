@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,7 +49,16 @@ fun TaskListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Менеджер рутины") })
+            TopAppBar(
+                title = { Text("Менеджер рутины") },
+                actions = {
+                    IconButton(onClick = {
+                        navController.navigate("day_templates?date=${selectedDate}")
+                    }) {
+                        Icon(Icons.Default.ViewModule, contentDescription = "Шаблоны")
+                    }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { navController.navigate("add_root") }) {

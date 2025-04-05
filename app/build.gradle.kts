@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("org.jetbrains.kotlin.kapt")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -70,6 +71,10 @@ dependencies {
     // Навигация
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 
     // Room
     implementation(libs.androidx.room.common)
@@ -87,5 +92,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
-    implementation("com.google.code.gson:gson:2.10.1")
+    // Gson
+    implementation(libs.gson)
 }

@@ -7,6 +7,7 @@ import com.myprojects.routinemanager.data.model.Task
 import com.myprojects.routinemanager.data.model.TaskCategory
 import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.data.repository.TaskRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,12 +15,14 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import javax.inject.Inject
 
 /**
  * ViewModel хранит состояние списка задач и логику их изменения.
  * Обращается к репозиторию для выполнения операций над данными.
  */
-class TaskViewModel(
+@HiltViewModel
+class TaskViewModel @Inject constructor(
     private val repository: TaskRepository
 ) : ViewModel() {
 

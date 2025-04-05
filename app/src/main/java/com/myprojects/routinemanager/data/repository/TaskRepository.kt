@@ -1,23 +1,20 @@
 package com.myprojects.routinemanager.data.repository
 
 import com.myprojects.routinemanager.data.model.*
-import com.myprojects.routinemanager.data.room.DayTemplateDao
 import com.myprojects.routinemanager.data.room.TaskDao
 import kotlinx.coroutines.flow.Flow
-import java.time.DayOfWeek
-import java.util.UUID
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.LocalDateTime
+import java.time.LocalTime
+import java.util.*
 
 /**
- * Репозиторий для работы с задачами, шаблонами задач и шаблонами дней.
+ * Репозиторий для работы с задачами и шаблонами задач.
  */
-open class TaskRepository(
-    private val taskDao: TaskDao,
-    private val dayTemplateDao: DayTemplateDao
+class TaskRepository(
+    private val taskDao: TaskDao
 ) {
-    // Пример одиночных шаблонов задач (устаревающее)
+    // Пример одиночных шаблонов задач (в будущем может заменяться на БД)
     private val templateList = listOf(
         TaskTemplate(
             templateId = "tpl1",
@@ -35,11 +32,12 @@ open class TaskRepository(
 
     fun getAllTasks(): Flow<List<Task>> = taskDao.getAllTasks()
 
-    fun getTasksForDate(date: LocalDate): Flow<List<Task>> = taskDao.getTasksForDate(date)
+    fun getTasksForDate(date: LocalDate): Flow<List<Task>> =
+        taskDao.getTasksForDate(date)
 
     suspend fun addTask(
         title: String,
-        description: String?,
+        description: String? = null,
         category: TaskCategory = TaskCategory.OTHER,
         startTime: LocalTime? = null,
         endTime: LocalTime? = null,
@@ -76,35 +74,6 @@ open class TaskRepository(
         taskDao.insertTask(newTask)
     }
 
-    // --- Работа с шаблонами дней ---
-
-    fun getAllDayTemplates(): Flow<List<DayTemplate>> =
-        dayTemplateDao.getAllDayTemplates()
-
-    suspend fun saveDayTemplate(template: DayTemplate) =
-        dayTemplateDao.insertDayTemplate(template)
-
-    suspend fun deleteDayTemplate(template: DayTemplate) =
-        dayTemplateDao.deleteDayTemplate(template)
-
-    suspend fun applyDayTemplate(template: DayTemplate, date: LocalDate) {
-        template.taskTemplates.forEach { tpl ->
-            addTask(
-                title = tpl.defaultTitle,
-                description = tpl.defaultDescription,
-                category = tpl.category,
-                startTime = tpl.defaultStartTime,
-                endTime = tpl.defaultEndTime,
-                date = date,
-                subtasks = tpl.subtasks
-            )
-        }
-    }
-
-    suspend fun getTemplateForWeekday(weekday: DayOfWeek): DayTemplate? {
-        return dayTemplateDao.getTemplateForWeekday(weekday)
-    }
-
     suspend fun updateTask(task: Task) {
         taskDao.updateTask(task)
     }
@@ -114,6 +83,6 @@ open class TaskRepository(
     }
 
     suspend fun markTaskDone(taskId: String, done: Boolean) {
-        // (на будущее)
+        // TODO: Реализация, если нужна (например, updateTask с новым флагом isDone)
     }
 }
