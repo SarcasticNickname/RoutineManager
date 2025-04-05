@@ -3,7 +3,9 @@ package com.myprojects.routinemanager.data.model
 import androidx.compose.ui.graphics.Color
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -15,9 +17,11 @@ data class Task(
     @PrimaryKey val id: String,
     val title: String,
     val description: String?,
-    val dueDateTime: String?,
+    val date: LocalDate,
     val isDone: Boolean,
     val category: TaskCategory = TaskCategory.OTHER,
+    val startTime: LocalTime? = null,
+    val endTime: LocalTime? = null,
     val subtasks: List<Subtask> = emptyList()
 ) {
     companion object {
@@ -38,10 +42,10 @@ data class Task(
 
 fun getCategoryColor(category: TaskCategory): Color {
     return when (category) {
-        TaskCategory.MORNING -> Color(0xFFB39DDB)
-        TaskCategory.WORK -> Color(0xFF90CAF9)
-        TaskCategory.SPORT -> Color(0xFFA5D6A7)
-        TaskCategory.STUDY -> Color(0xFFFFF59D)
-        TaskCategory.OTHER -> Color(0xFFE0E0E0)
+        TaskCategory.MORNING -> Color(0xFF7E57C2) // яркий фиолетовый
+        TaskCategory.WORK -> Color(0xFF42A5F5)    // насыщенный голубой
+        TaskCategory.SPORT -> Color(0xFF66BB6A)   // ярко-зелёный
+        TaskCategory.STUDY -> Color(0xFFFFCA28)   // насыщенный жёлтый
+        TaskCategory.OTHER -> Color(0xFFBDBDBD)   // нейтральный серый
     }
 }

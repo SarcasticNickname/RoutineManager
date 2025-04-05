@@ -1,81 +1,119 @@
 package com.myprojects.routinemanager.data.repository
 
-import com.myprojects.routinemanager.data.model.Task
-import com.myprojects.routinemanager.data.model.TaskTemplate
+import com.myprojects.routinemanager.data.model.*
+import com.myprojects.routinemanager.data.room.DayTemplateDao
 import com.myprojects.routinemanager.data.room.TaskDao
 import kotlinx.coroutines.flow.Flow
+import java.time.DayOfWeek
 import java.util.UUID
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.LocalDateTime
-import com.myprojects.routinemanager.data.model.Task.Companion.localDateTimeToString
 
 /**
- * Репозиторий для работы с задачами и их шаблонами.
- * Выполняет обращение к DAO для операций над базой данных.
+ * Репозиторий для работы с задачами, шаблонами задач и шаблонами дней.
  */
 open class TaskRepository(
-    private var taskDao: TaskDao
+    private val taskDao: TaskDao,
+    private val dayTemplateDao: DayTemplateDao
 ) {
-    // Можно хранить шаблоны в памяти или в отдельной таблице.
-    // Здесь — просто пример нескольких шаблонов.
+    // Пример одиночных шаблонов задач (устаревающее)
     private val templateList = listOf(
         TaskTemplate(
             templateId = "tpl1",
-            name = "Утренняя рутина",
             defaultTitle = "Подъём в 7:00",
             defaultDescription = "Проверить почту, позавтракать"
         ),
         TaskTemplate(
             templateId = "tpl2",
-            name = "Вечерняя рутина",
             defaultTitle = "Лечь в 23:00",
             defaultDescription = "Подготовить одежду на завтра"
         )
     )
 
-    fun getAllTemplates(): List<TaskTemplate> {
-        return templateList
-    }
+    fun getAllTemplates(): List<TaskTemplate> = templateList
 
     fun getAllTasks(): Flow<List<Task>> = taskDao.getAllTasks()
 
-    suspend fun addTask(title: String, description: String?, dueTime: LocalDateTime? = null) {
+    fun getTasksForDate(date: LocalDate): Flow<List<Task>> = taskDao.getTasksForDate(date)
+
+    suspend fun addTask(
+        title: String,
+        description: String?,
+        category: TaskCategory = TaskCategory.OTHER,
+        startTime: LocalTime? = null,
+        endTime: LocalTime? = null,
+        date: LocalDate,
+        subtasks: List<Subtask> = emptyList()
+    ) {
         val newTask = Task(
             id = UUID.randomUUID().toString(),
             title = title,
             description = description,
-            dueDateTime = localDateTimeToString(dueTime),
-            isDone = false
+            isDone = false,
+            category = category,
+            startTime = startTime,
+            endTime = endTime,
+            date = date,
+            subtasks = subtasks
         )
         taskDao.insertTask(newTask)
     }
 
     suspend fun addTaskFromTemplate(template: TaskTemplate) {
+        val now = LocalDateTime.now()
         val newTask = Task(
             id = UUID.randomUUID().toString(),
             title = template.defaultTitle,
             description = template.defaultDescription,
-            dueDateTime = localDateTimeToString(LocalDateTime.now().plusHours(1)),
-            isDone = false
+            isDone = false,
+            category = template.category,
+            startTime = template.defaultStartTime,
+            endTime = template.defaultEndTime,
+            date = now.toLocalDate(),
+            subtasks = template.subtasks
         )
         taskDao.insertTask(newTask)
     }
 
-    suspend fun markTaskDone(taskId: String, done: Boolean) {
-        // Для обновления нужно получить объект из базы (упрощённый пример)
-        val currentList = taskDao.getAllTasks() // Flow, но мы можем собрать первым значением
-        // Этот шаг обычно требует скоупа корутин и сбора Flow, поэтому в реальном коде
-        // пишут иначе (через отдельный метод DAO).
+    // --- Работа с шаблонами дней ---
+
+    fun getAllDayTemplates(): Flow<List<DayTemplate>> =
+        dayTemplateDao.getAllDayTemplates()
+
+    suspend fun saveDayTemplate(template: DayTemplate) =
+        dayTemplateDao.insertDayTemplate(template)
+
+    suspend fun deleteDayTemplate(template: DayTemplate) =
+        dayTemplateDao.deleteDayTemplate(template)
+
+    suspend fun applyDayTemplate(template: DayTemplate, date: LocalDate) {
+        template.taskTemplates.forEach { tpl ->
+            addTask(
+                title = tpl.defaultTitle,
+                description = tpl.defaultDescription,
+                category = tpl.category,
+                startTime = tpl.defaultStartTime,
+                endTime = tpl.defaultEndTime,
+                date = date,
+                subtasks = tpl.subtasks
+            )
+        }
+    }
+
+    suspend fun getTemplateForWeekday(weekday: DayOfWeek): DayTemplate? {
+        return dayTemplateDao.getTemplateForWeekday(weekday)
+    }
+
+    suspend fun updateTask(task: Task) {
+        taskDao.updateTask(task)
     }
 
     suspend fun deleteTask(task: Task) {
         taskDao.deleteTask(task)
     }
 
-    /**
-     * Пример метода, когда нужно найти задачу и обновить поле isDone.
-     * Здесь для наглядности сделана отдельная операция в DAO (updateTask).
-     */
-    suspend fun updateTask(task: Task) {
-        taskDao.updateTask(task)
+    suspend fun markTaskDone(taskId: String, done: Boolean) {
+        // (на будущее)
     }
 }

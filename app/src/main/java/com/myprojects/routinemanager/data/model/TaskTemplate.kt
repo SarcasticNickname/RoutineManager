@@ -1,12 +1,14 @@
 package com.myprojects.routinemanager.data.model
 
-/**
- * Модель шаблона задачи.
- * Шаблоны можно хранить в базе данных или в отдельном источнике.
- */
+import java.time.LocalTime
+import java.util.UUID
+
 data class TaskTemplate(
-    val templateId: String,
-    val name: String,
+    val templateId: String = UUID.randomUUID().toString(),
     val defaultTitle: String,
-    val defaultDescription: String? = null
+    val defaultDescription: String? = null,
+    val category: TaskCategory = TaskCategory.OTHER,
+    val defaultStartTime: LocalTime? = null,
+    val defaultEndTime: LocalTime? = null,
+    val subtasks: List<Subtask> = emptyList()
 )

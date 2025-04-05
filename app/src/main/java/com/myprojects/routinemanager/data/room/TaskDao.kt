@@ -5,6 +5,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import com.myprojects.routinemanager.data.model.Task
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 /**
  * DAO (Data Access Object) для доступа к данным о задачах в базе данных.
@@ -23,4 +24,7 @@ interface TaskDao {
 
     @Update
     suspend fun updateTask(task: Task)
+
+    @Query("SELECT * FROM tasks WHERE date = :date")
+    fun getTasksForDate(date: LocalDate): Flow<List<Task>>
 }

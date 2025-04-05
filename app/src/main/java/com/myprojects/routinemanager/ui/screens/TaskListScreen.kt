@@ -3,49 +3,32 @@ package com.myprojects.routinemanager.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.myprojects.routinemanager.data.model.Task
 import com.myprojects.routinemanager.data.model.getCategoryColor
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
+import java.time.LocalDate
 
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * Экран со списком задач.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
@@ -54,7 +37,14 @@ fun TaskListScreen(
     onAddTaskClick: () -> Unit,
     onTaskClick: (String) -> Unit
 ) {
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val taskList by viewModel.tasks.collectAsState()
+    val context = LocalContext.current
+
+    // Загружаем задачи на выбранную дату
+    LaunchedEffect(selectedDate) {
+        viewModel.loadTasksFor(selectedDate)
+    }
 
     Scaffold(
         topBar = {
@@ -66,18 +56,77 @@ fun TaskListScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-        ) {
-            items(taskList) { task ->
-                TaskItem(
-                    task = task,
-                    onCheck = { viewModel.toggleTaskDone(task) },
-//                    onDelete = { viewModel.deleteTask(task) },
-                    onClick = { onTaskClick(task.id) }
-                )
+        Column(modifier = Modifier.padding(padding)) {
+
+            // --- Блок выбора даты ---
+            val isToday = selectedDate == LocalDate.now()
+            val locale = Locale("ru")
+            val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)
+            val formattedDate = selectedDate.format(formatter).replaceFirstChar { it.uppercase() }
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = formattedDate,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (!isToday) {
+                            IconButton(
+                                onClick = { selectedDate = LocalDate.now() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Restore,
+                                    contentDescription = "Сегодня",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+
+                        IconButton(onClick = {
+                            android.app.DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                                },
+                                selectedDate.year,
+                                selectedDate.monthValue - 1,
+                                selectedDate.dayOfMonth
+                            ).show()
+                        }) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = "Выбрать дату")
+                        }
+                    }
+                }
+            }
+
+            // --- Список задач ---
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(taskList) { task ->
+                    TaskItem(
+                        task = task,
+                        onCheck = { viewModel.toggleTaskDone(task) },
+                        onClick = { onTaskClick(task.id) }
+                    )
+                }
             }
         }
     }
@@ -91,13 +140,7 @@ fun TaskItem(
 ) {
     val categoryColor = getCategoryColor(task.category)
     var expanded by remember { mutableStateOf(false) }
-
-    // Пример подзадач — в будущем task.subtasks можно хранить в БД
-    val subtasks = listOf(
-        "Подзадача 1" to false,
-        "Подзадача 2" to true,
-        "Подзадача 3" to false
-    )
+    val subtasks = remember { task.subtasks.toMutableStateList() }
 
     Card(
         modifier = Modifier
@@ -108,6 +151,7 @@ fun TaskItem(
     ) {
         Column {
             Row(modifier = Modifier.height(IntrinsicSize.Min)) {
+                // Цветовая полоска категории
                 Box(
                     modifier = Modifier
                         .width(6.dp)
@@ -116,33 +160,98 @@ fun TaskItem(
                         .background(categoryColor)
                 )
 
-                Row(
+                Column(
                     modifier = Modifier
                         .padding(16.dp)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = task.title,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        if (!task.description.isNullOrEmpty()) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = task.description,
-                                style = MaterialTheme.typography.bodyMedium
+                                text = task.title,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            if (!task.description.isNullOrEmpty()) {
+                                Text(
+                                    text = task.description,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+
+                            // ВРЕМЯ (под заголовком)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = "Время",
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = formatTimeRange(task.startTime, task.endTime),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            var menuExpanded by remember { mutableStateOf(false) }
+
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Меню"
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Редактировать") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onClick()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Удалить") },
+                                    onClick = {
+                                        menuExpanded = false
+                                        // вызвать onDelete() если пробросишь
+                                    }
+                                )
+                            }
+
+                            Checkbox(
+                                checked = task.isDone,
+                                onCheckedChange = { onCheck() }
                             )
                         }
                     }
 
-                    Checkbox(
-                        checked = task.isDone,
-                        onCheckedChange = { onCheck() }
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .padding(top = 8.dp, bottom = 4.dp)
+                            .fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
                     )
                 }
             }
 
-            // 🔻 Разграничение и подзадачи
             AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
@@ -155,8 +264,8 @@ fun TaskItem(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                     )
 
-                    subtasks.forEach { (text, done) ->
-                        var subtaskDone by remember { mutableStateOf(done) }
+                    subtasks.forEachIndexed { index, subtask ->
+                        var subtaskDone by remember { mutableStateOf(subtask.isDone) }
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -166,10 +275,13 @@ fun TaskItem(
                         ) {
                             Checkbox(
                                 checked = subtaskDone,
-                                onCheckedChange = { subtaskDone = it }
+                                onCheckedChange = {
+                                    subtaskDone = it
+                                    subtasks[index] = subtask.copy(isDone = it)
+                                }
                             )
                             Text(
-                                text = text,
+                                text = subtask.title,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -177,5 +289,21 @@ fun TaskItem(
                 }
             }
         }
+    }
+}
+
+fun formatTimeRange(start: LocalTime?, end: LocalTime?): String {
+    return if (start != null && end != null) {
+        "${start.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${
+            end.format(
+                DateTimeFormatter.ofPattern(
+                    "HH:mm"
+                )
+            )
+        }"
+    } else if (start != null) {
+        "с ${start.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+    } else {
+        "Время не указано"
     }
 }

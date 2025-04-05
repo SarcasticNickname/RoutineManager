@@ -13,4 +13,6 @@ import com.myprojects.routinemanager.data.model.Task
 @TypeConverters(Converters::class)
 abstract class RoutineManagerDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
+
+    abstract fun dayTemplateDao(): DayTemplateDao
 }

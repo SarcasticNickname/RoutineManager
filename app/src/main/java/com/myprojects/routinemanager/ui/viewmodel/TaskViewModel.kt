@@ -2,7 +2,9 @@ package com.myprojects.routinemanager.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.myprojects.routinemanager.data.model.Subtask
 import com.myprojects.routinemanager.data.model.Task
+import com.myprojects.routinemanager.data.model.TaskCategory
 import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.data.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * ViewModel хранит состояние списка задач и логику их изменения.
@@ -27,18 +31,40 @@ class TaskViewModel(
 
     init {
         viewModelScope.launch {
-            // Собираем поток задач из репозитория
             repository.getAllTasks().collectLatest { taskList ->
                 _tasks.value = taskList
             }
         }
-        // Шаблоны не меняются, поэтому читаем их один раз
         _templates.value = repository.getAllTemplates()
     }
 
-    fun addTask(title: String, description: String?) {
+    fun addTask(
+        title: String,
+        description: String?,
+        category: TaskCategory,
+        startTime: LocalTime?,
+        endTime: LocalTime?,
+        date: LocalDate,
+        subtasks: List<String>
+    ) {
         viewModelScope.launch {
-            repository.addTask(title, description)
+            repository.addTask(
+                title = title,
+                description = description,
+                category = category,
+                startTime = startTime,
+                endTime = endTime,
+                date = date,
+                subtasks = subtasks.map { Subtask(it) }
+            )
+        }
+    }
+
+    fun loadTasksFor(date: LocalDate) {
+        viewModelScope.launch {
+            repository.getTasksForDate(date).collectLatest {
+                _tasks.value = it
+            }
         }
     }
 
@@ -50,7 +76,6 @@ class TaskViewModel(
 
     fun toggleTaskDone(task: Task) {
         viewModelScope.launch {
-            // Меняем значение isDone и вызываем метод обновления
             val updatedTask = task.copy(isDone = !task.isDone)
             repository.updateTask(updatedTask)
         }
@@ -63,6 +88,10 @@ class TaskViewModel(
     }
 
     fun updateTask(updated: Task) {
-
+        viewModelScope.launch {
+            repository.updateTask(updated)
+        }
     }
+
+    fun getAllTemplates(): List<TaskTemplate> = templates.value
 }
