@@ -7,7 +7,6 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.myprojects.routinemanager.data.model.DayTemplate
 import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.repository.TaskRepository
-import com.myprojects.routinemanager.data.room.DatabaseCallback
 import com.myprojects.routinemanager.data.room.DayTemplateDao
 import com.myprojects.routinemanager.data.room.RoutineManagerDatabase
 import com.myprojects.routinemanager.data.room.TaskDao

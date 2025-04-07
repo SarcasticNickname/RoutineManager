@@ -2,88 +2,101 @@ package com.myprojects.routinemanager.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.myprojects.routinemanager.data.model.DayTemplate
+import androidx.navigation.NavController
+import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DayTemplatesScreen(
     viewModel: DayTemplateViewModel,
-    onApplyTemplate: (DayTemplate) -> Unit,
-    onEditTemplate: (DayTemplate) -> Unit
+    navController: NavController,
+    onApplyTemplate: (DayTemplateWithTasks) -> Unit,
+    onOpenDetails: (DayTemplateWithTasks) -> Unit,
+    onCreateCustomTemplate: () -> Unit,
+    onDeleteTemplate: (DayTemplateWithTasks) -> Unit
 ) {
     val weekly by viewModel.weeklyTemplates.collectAsState()
     val custom by viewModel.customTemplates.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = selectedTab) {
-            Tab(
-                selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = { Text("По дням недели") })
-            Tab(
-                selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = { Text("Пользовательские") })
-        }
-
-        when (selectedTab) {
-            0 -> {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(weekly) { template ->
-                        TemplateGridCard(template, onApplyTemplate, onEditTemplate)
-                    }
+    Scaffold(
+        floatingActionButton = {
+            if (selectedTab == 1) {
+                FloatingActionButton(onClick = onCreateCustomTemplate) {
+                    Icon(Icons.Default.Add, contentDescription = "Создать шаблон")
                 }
             }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text("По дням недели") }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text("Пользовательские") }
+                )
+            }
 
-            1 -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(custom) { template ->
-                        TemplateListCard(template, onApplyTemplate, onEditTemplate)
+            when (selectedTab) {
+                0 -> {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(weekly) { templateWithTasks ->
+                            TemplateGridCard(
+                                template = templateWithTasks,
+                                onApply = onApplyTemplate,
+                                onDetails = onOpenDetails
+                            )
+                        }
+                    }
+                }
+
+                1 -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(custom) { templateWithTasks ->
+                            TemplateListCard(
+                                template = templateWithTasks,
+                                onApply = onApplyTemplate,
+                                onOpenDetails = onOpenDetails,
+                                onDelete = onDeleteTemplate
+                            )
+                        }
                     }
                 }
             }
@@ -93,10 +106,13 @@ fun DayTemplatesScreen(
 
 @Composable
 fun TemplateGridCard(
-    template: DayTemplate,
-    onApply: (DayTemplate) -> Unit,
-    onDetails: (DayTemplate) -> Unit
+    template: DayTemplateWithTasks,
+    onApply: (DayTemplateWithTasks) -> Unit,
+    onDetails: (DayTemplateWithTasks) -> Unit
 ) {
+    val data = template.template
+    val tasks = template.taskTemplates
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,16 +128,15 @@ fun TemplateGridCard(
         ) {
             Column {
                 Text(
-                    template.name,
+                    data.name,
                     style = MaterialTheme.typography.titleMedium
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                if (template.taskTemplates.isNotEmpty()) {
+                if (tasks.isNotEmpty()) {
                     Text(
-                        text = template.taskTemplates.take(2)
-                            .joinToString("\n") { "- ${it.defaultTitle}" },
+                        text = tasks.take(2).joinToString("\n") { "- ${it.defaultTitle}" },
                         style = MaterialTheme.typography.bodySmall
                     )
                 } else {
@@ -141,13 +156,16 @@ fun TemplateGridCard(
     }
 }
 
-
 @Composable
 fun TemplateListCard(
-    template: DayTemplate,
-    onApply: (DayTemplate) -> Unit,
-    onOpenDetails: (DayTemplate) -> Unit
+    template: DayTemplateWithTasks,
+    onApply: (DayTemplateWithTasks) -> Unit,
+    onOpenDetails: (DayTemplateWithTasks) -> Unit,
+    onDelete: (DayTemplateWithTasks) -> Unit
 ) {
+    val data = template.template
+    val tasks = template.taskTemplates
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -160,12 +178,19 @@ fun TemplateListCard(
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(template.name, style = MaterialTheme.typography.titleMedium)
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(data.name, style = MaterialTheme.typography.titleMedium)
+                IconButton(onClick = { onDelete(template) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Удалить шаблон")
+                }
+            }
 
-            if (template.taskTemplates.isNotEmpty()) {
+            if (tasks.isNotEmpty()) {
                 Text(
-                    text = template.taskTemplates.take(2)
-                        .joinToString("\n") { "- ${it.defaultTitle}" },
+                    text = tasks.take(2).joinToString("\n") { "- ${it.defaultTitle}" },
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp)
                 )

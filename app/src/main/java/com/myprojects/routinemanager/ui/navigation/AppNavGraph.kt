@@ -4,15 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.myprojects.routinemanager.ui.screens.AddTaskRootScreen
-import com.myprojects.routinemanager.ui.screens.TaskDetailScreen
-import com.myprojects.routinemanager.ui.screens.TaskListScreen
-import com.myprojects.routinemanager.ui.screens.AddTaskScreen
-import com.myprojects.routinemanager.ui.screens.DayTemplatesScreen
+import com.myprojects.routinemanager.ui.screens.*
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import java.time.LocalDate
-import androidx.hilt.navigation.compose.hiltViewModel
+import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
 
 @Composable
 fun AppNavGraph(
@@ -69,9 +65,45 @@ fun AppNavGraph(
                     taskViewModel.loadTasksFor(selectedDate)
                     navController.popBackStack()
                 },
-                onEditTemplate = { template ->
-                    // заглушка
-                }
+                onOpenDetails = { template ->
+                    navController.navigate("template_detail/${template.template.id}")
+                },
+                onCreateCustomTemplate = {
+                    // Создание нового пользовательского шаблона
+                    navController.navigate("edit_template")
+                },
+                onDeleteTemplate = { template: DayTemplateWithTasks ->
+                    dayTemplateViewModel.deleteTemplate(template.template)
+                },
+                navController = navController
+            )
+        }
+
+        composable("template_detail/{templateId}") { backStackEntry ->
+            val templateId = backStackEntry.arguments?.getString("templateId")
+            if (templateId != null) {
+                TemplateDetailScreen(
+                    templateId = templateId,
+                    viewModel = dayTemplateViewModel,
+                    onBack = { navController.popBackStack() },
+                    navController = navController
+                )
+            }
+        }
+
+        composable("add_task_to_template/{templateId}") { backStackEntry ->
+            val templateId = backStackEntry.arguments?.getString("templateId")
+            AddTaskRootScreen(
+                viewModel = taskViewModel,
+                templateId = templateId,
+                onTaskAdded = { navController.popBackStack() }
+            )
+        }
+
+        composable("edit_template") {
+            EditDayTemplateScreen(
+                viewModel = dayTemplateViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
     }

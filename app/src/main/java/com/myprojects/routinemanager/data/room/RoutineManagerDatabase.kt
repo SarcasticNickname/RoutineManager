@@ -7,6 +7,7 @@ import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.myprojects.routinemanager.data.model.DayTemplate
 import com.myprojects.routinemanager.data.model.Task
+import com.myprojects.routinemanager.data.model.TaskTemplate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -16,7 +17,8 @@ import java.time.DayOfWeek
 @Database(
     entities = [
         Task::class,
-        DayTemplate::class
+        DayTemplate::class,
+        TaskTemplate::class
     ],
     version = 1,
     exportSchema = false
@@ -51,7 +53,7 @@ abstract class RoutineManagerDatabase : RoomDatabase() {
                         delay(300) // можно и без этого, если всё и так работает
 
                         // Нельзя напрямую получить DAO, но можно передать внешний reference через AppModule
-                        databaseRef?.dayTemplateDao()?.insertAll(
+                        databaseRef?.dayTemplateDao()?.insertAllDayTemplates(
                             DayOfWeek.values().map { day ->
                                 DayTemplate(
                                     name = dayNames[day] ?: day.name,
