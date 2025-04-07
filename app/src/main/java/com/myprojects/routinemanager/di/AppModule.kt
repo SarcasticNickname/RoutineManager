@@ -2,8 +2,12 @@ package com.myprojects.routinemanager.di
 
 import android.app.Application
 import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.myprojects.routinemanager.data.model.DayTemplate
 import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.repository.TaskRepository
+import com.myprojects.routinemanager.data.room.DatabaseCallback
 import com.myprojects.routinemanager.data.room.DayTemplateDao
 import com.myprojects.routinemanager.data.room.RoutineManagerDatabase
 import com.myprojects.routinemanager.data.room.TaskDao
@@ -11,6 +15,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import javax.inject.Singleton
 
 @Module
@@ -20,11 +28,19 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(app: Application): RoutineManagerDatabase {
-        return Room.databaseBuilder(
+        val db = Room.databaseBuilder(
             app,
             RoutineManagerDatabase::class.java,
             "routine_manager_db"
-        ).build()
+        )
+            .addCallback(RoutineManagerDatabase.createCallback())
+            .fallbackToDestructiveMigration() // безопасно в разработке
+            .build()
+
+        // передаём ссылку в companion object, чтобы onCreate мог использовать DAO
+        RoutineManagerDatabase.databaseRef = db
+
+        return db
     }
 
     @Provides

@@ -29,4 +29,7 @@ interface DayTemplateDao {
 
     @Delete
     suspend fun deleteDayTemplate(template: DayTemplate)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(templates: List<DayTemplate>)
 }

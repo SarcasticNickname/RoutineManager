@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import javax.inject.Inject
+import android.util.Log
+
 
 @HiltViewModel
 class DayTemplateViewModel @Inject constructor(
@@ -26,11 +28,21 @@ class DayTemplateViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             repository.getAllTemplates().collect { allTemplates ->
+                Log.d("DayTemplateVM", "🔥 Всего шаблонов в базе: ${allTemplates.size}")
+
+                allTemplates.forEach { template ->
+                    Log.d(
+                        "DayTemplateVM",
+                        "📋 name=${template.name}, isWeekly=${template.isWeekly}, weekday=${template.weekday}, tasks=${template.taskTemplates.size}"
+                    )
+                }
+
                 _weeklyTemplates.value = allTemplates.filter { it.isWeekly }
                 _customTemplates.value = allTemplates.filter { !it.isWeekly }
             }
         }
     }
+
 
     fun addTemplate(template: DayTemplate) {
         viewModelScope.launch {
