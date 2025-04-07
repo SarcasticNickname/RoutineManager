@@ -2,11 +2,9 @@ package com.myprojects.routinemanager.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.myprojects.routinemanager.data.model.Subtask
-import com.myprojects.routinemanager.data.model.Task
-import com.myprojects.routinemanager.data.model.TaskCategory
-import com.myprojects.routinemanager.data.model.TaskTemplate
+import com.myprojects.routinemanager.data.model.*
 import com.myprojects.routinemanager.data.repository.TaskRepository
+import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,15 +13,13 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
+import java.util.UUID
 import javax.inject.Inject
 
-/**
- * ViewModel хранит состояние списка задач и логику их изменения.
- * Обращается к репозиторию для выполнения операций над данными.
- */
 @HiltViewModel
 class TaskViewModel @Inject constructor(
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val dayTemplateRepository: DayTemplateRepository
 ) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
@@ -97,4 +93,49 @@ class TaskViewModel @Inject constructor(
     }
 
     fun getAllTemplates(): List<TaskTemplate> = templates.value
+
+    // Метод для получения задачи по её идентификатору.
+    fun getTaskById(taskId: String): Task? {
+        return _tasks.value.find { it.id == taskId }
+    }
+
+    // Новый метод: добавление задачи в шаблон (через параметры)
+    fun addTaskTemplateToTemplate(
+        templateId: String,
+        title: String,
+        description: String?,
+        category: TaskCategory,
+        startTime: LocalTime?,
+        endTime: LocalTime?,
+        subtasks: List<String>
+    ) {
+        val taskTemplate = TaskTemplate(
+            id = UUID.randomUUID().toString(),
+            defaultTitle = title,
+            defaultDescription = description,
+            category = category,
+            defaultStartTime = startTime,
+            defaultEndTime = endTime,
+            subtasks = subtasks.map { Subtask(it) },
+            templateId = templateId
+        )
+        addTaskTemplateToTemplate(templateId, taskTemplate)
+    }
+
+    // Новый метод: добавление задачи в шаблон (из существующего TaskTemplate)
+    fun addTaskTemplateToTemplate(
+        templateId: String,
+        template: TaskTemplate
+    ) {
+        viewModelScope.launch {
+            dayTemplateRepository.addTaskTemplateToTemplate(templateId, template)
+        }
+    }
+
+    // Новый метод: удаление всех задач за выбранную дату
+    fun deleteAllTasksForDate(date: LocalDate) {
+        viewModelScope.launch {
+            repository.deleteAllTasksForDate(date)
+        }
+    }
 }

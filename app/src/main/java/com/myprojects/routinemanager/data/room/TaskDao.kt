@@ -27,4 +27,7 @@ interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE date = :date")
     fun getTasksForDate(date: LocalDate): Flow<List<Task>>
+
+    @Query("DELETE FROM tasks WHERE date = :date")
+    suspend fun deleteTasksForDate(date: LocalDate)
 }

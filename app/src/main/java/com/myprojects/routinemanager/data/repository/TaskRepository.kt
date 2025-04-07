@@ -82,6 +82,11 @@ class TaskRepository(
         taskDao.deleteTask(task)
     }
 
+    // Новый метод: удаление всех задач за выбранную дату
+    suspend fun deleteAllTasksForDate(date: LocalDate) {
+        taskDao.deleteTasksForDate(date)
+    }
+
     suspend fun markTaskDone(taskId: String, done: Boolean) {
         // TODO: Реализация, если нужна (например, updateTask с новым флагом isDone)
     }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Schedule
@@ -25,10 +27,10 @@ import com.myprojects.routinemanager.data.model.Task
 import com.myprojects.routinemanager.data.model.getCategoryColor
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import java.time.LocalDate
-
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,103 +43,195 @@ fun TaskListScreen(
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val taskList by viewModel.tasks.collectAsState()
     val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
 
     // Загружаем задачи на выбранную дату
     LaunchedEffect(selectedDate) {
         viewModel.loadTasksFor(selectedDate)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Менеджер рутины") },
-                actions = {
-                    IconButton(onClick = {
-                        navController.navigate("day_templates?date=${selectedDate}")
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            // Задаём фиксированную ширину для листа (например, 280.dp)
+            ModalDrawerSheet(
+                modifier = Modifier.width(280.dp)
+            ) {
+                // Пример пунктов меню в Drawer
+                NavigationDrawerItem(
+                    label = { Text("Главная") },
+                    selected = true,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Настройки") },
+                    selected = false,
+                    onClick = {
+                        // Переход к экрану настроек
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+                NavigationDrawerItem(
+                    label = { Text("О приложении") },
+                    selected = false,
+                    onClick = {
+                        // Переход к экрану "О приложении"
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Менеджер рутины") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            coroutineScope.launch { drawerState.open() }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Открыть меню"
+                            )
+                        }
+                    },
+                    actions = {
+                        // Кнопка "Удалить все задачи за день" с диалогом подтверждения
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Удалить все задачи"
+                            )
+                        }
+                        // Кнопка "Шаблоны"
+                        IconButton(onClick = {
+                            navController.navigate("day_templates?date=${selectedDate}")
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ViewModule,
+                                contentDescription = "Шаблоны"
+                            )
+                        }
+                    }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { navController.navigate("add_root") }) {
+                    Text("+")
+                }
+            }
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+
+                // --- Блок выбора даты ---
+                val isToday = selectedDate == LocalDate.now()
+                val locale = Locale("ru")
+                val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)
+                val formattedDate = selectedDate.format(formatter).replaceFirstChar { it.uppercase() }
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = formattedDate,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (!isToday) {
+                                IconButton(
+                                    onClick = { selectedDate = LocalDate.now() },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Restore,
+                                        contentDescription = "Сегодня",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+
+                            IconButton(onClick = {
+                                android.app.DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
+                                    },
+                                    selectedDate.year,
+                                    selectedDate.monthValue - 1,
+                                    selectedDate.dayOfMonth
+                                ).show()
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = "Выбрать дату"
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // --- Список задач ---
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(taskList) { task ->
+                        TaskItem(
+                            task = task,
+                            onCheck = { viewModel.toggleTaskDone(task) },
+                            onEdit = {
+                                // Переход к экрану редактирования задачи
+                                navController.navigate("edit_task/${task.id}")
+                            },
+                            onDelete = { viewModel.deleteTask(task) },
+                            onClick = { onTaskClick(task.id) }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Диалог подтверждения удаления всех задач за выбранную дату
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Подтверждение") },
+                text = { Text("Вы действительно хотите удалить все задачи за ${selectedDate}?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.deleteAllTasksForDate(selectedDate)
+                        showDeleteDialog = false
                     }) {
-                        Icon(Icons.Default.ViewModule, contentDescription = "Шаблоны")
+                        Text("Удалить")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Отмена")
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("add_root") }) {
-                Text("+")
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-
-            // --- Блок выбора даты ---
-            val isToday = selectedDate == LocalDate.now()
-            val locale = Locale("ru")
-            val formatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)
-            val formattedDate = selectedDate.format(formatter).replaceFirstChar { it.uppercase() }
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = formattedDate,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (!isToday) {
-                            IconButton(
-                                onClick = { selectedDate = LocalDate.now() },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Restore,
-                                    contentDescription = "Сегодня",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
-
-                        IconButton(onClick = {
-                            android.app.DatePickerDialog(
-                                context,
-                                { _, year, month, dayOfMonth ->
-                                    selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-                                },
-                                selectedDate.year,
-                                selectedDate.monthValue - 1,
-                                selectedDate.dayOfMonth
-                            ).show()
-                        }) {
-                            Icon(Icons.Default.CalendarToday, contentDescription = "Выбрать дату")
-                        }
-                    }
-                }
-            }
-
-            // --- Список задач ---
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(taskList) { task ->
-                    TaskItem(
-                        task = task,
-                        onCheck = { viewModel.toggleTaskDone(task) },
-                        onClick = { onTaskClick(task.id) }
-                    )
-                }
-            }
         }
     }
 }
@@ -146,6 +240,8 @@ fun TaskListScreen(
 fun TaskItem(
     task: Task,
     onCheck: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
     val categoryColor = getCategoryColor(task.category)
@@ -233,14 +329,14 @@ fun TaskItem(
                                     text = { Text("Редактировать") },
                                     onClick = {
                                         menuExpanded = false
-                                        onClick()
+                                        onEdit()
                                     }
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Удалить") },
                                     onClick = {
                                         menuExpanded = false
-                                        // вызвать onDelete() если пробросишь
+                                        onDelete()
                                     }
                                 )
                             }
@@ -304,15 +400,11 @@ fun TaskItem(
 
 fun formatTimeRange(start: LocalTime?, end: LocalTime?): String {
     return if (start != null && end != null) {
-        "${start.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${
-            end.format(
-                DateTimeFormatter.ofPattern(
-                    "HH:mm"
-                )
-            )
+        "${start.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))} - ${
+            end.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
         }"
     } else if (start != null) {
-        "с ${start.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        "с ${start.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))}"
     } else {
         "Время не указано"
     }

@@ -10,6 +10,7 @@ import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import java.time.LocalDate
 import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
 
+
 @Composable
 fun AppNavGraph(
     navController: NavHostController,
@@ -18,27 +19,40 @@ fun AppNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.TaskList.route
+        startDestination = NavRoutes.TaskList.toString()
     ) {
-        composable(NavRoutes.TaskList.route) {
+        composable(NavRoutes.TaskList.toString()) {
             TaskListScreen(
                 viewModel = taskViewModel,
-                onAddTaskClick = { navController.navigate(NavRoutes.AddTask.route) },
+                onAddTaskClick = { navController.navigate(NavRoutes.AddTask.toString()) },
                 onTaskClick = { taskId ->
-                    navController.navigate("${NavRoutes.TaskDetail.route}/$taskId")
+                    navController.navigate("${NavRoutes.TaskDetail}/$taskId")
                 },
                 navController = navController
             )
         }
 
-        composable(NavRoutes.AddTask.route) {
+        composable(NavRoutes.AddTask.toString()) {
+            // Новый экран для создания задачи (пустая форма)
             AddTaskScreen(
                 viewModel = taskViewModel,
                 onTaskAdded = { navController.popBackStack() }
             )
         }
 
-        composable("${NavRoutes.TaskDetail.route}/{taskId}") { backStackEntry ->
+        composable("edit_task/{taskId}") { backStackEntry ->
+            val taskId = backStackEntry.arguments?.getString("taskId")
+            if (taskId != null) {
+                // Экран редактирования задачи с предзаполненными данными
+                AddTaskScreen(
+                    viewModel = taskViewModel,
+                    onTaskAdded = { navController.popBackStack() },
+                    taskId = taskId
+                )
+            }
+        }
+
+        composable("${NavRoutes.TaskDetail}/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
             TaskDetailScreen(
                 viewModel = taskViewModel,
