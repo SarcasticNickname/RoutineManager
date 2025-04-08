@@ -2,9 +2,6 @@ package com.myprojects.routinemanager.di
 
 import android.app.Application
 import androidx.room.Room
-import androidx.room.RoomDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
-import com.myprojects.routinemanager.data.model.DayTemplate
 import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.repository.TaskRepository
 import com.myprojects.routinemanager.data.room.DayTemplateDao
@@ -14,10 +11,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.time.DayOfWeek
 import javax.inject.Singleton
 
 @Module

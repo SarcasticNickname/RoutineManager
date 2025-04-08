@@ -3,6 +3,7 @@
 agp = "8.1.2"
 
 # Возьмём Kotlin 1.9.10 как актуальную стабильную
+datastorePreferences = "1.0.0"
 gson = "2.10.1"
 hiltAndroid = "2.48"
 hiltCompiler = "2.48"
@@ -27,6 +28,7 @@ firebaseCrashlyticsBuildtools = "3.0.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }

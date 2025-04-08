@@ -1,10 +1,10 @@
 package com.myprojects.routinemanager.data.room
 
 import androidx.room.TypeConverter
-import com.myprojects.routinemanager.data.model.Subtask
-import com.myprojects.routinemanager.data.model.TaskCategory
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.myprojects.routinemanager.data.model.Subtask
+import com.myprojects.routinemanager.data.model.TaskCategory
 import com.myprojects.routinemanager.data.model.TaskTemplate
 import java.time.DayOfWeek
 import java.time.LocalDate

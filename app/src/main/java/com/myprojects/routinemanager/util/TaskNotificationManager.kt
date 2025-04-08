@@ -1,42 +1,48 @@
-package com.example.routinemanager.util
+package com.myprojects.routinemanager.util
 
-import android.content.Context
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import androidx.annotation.RequiresPermission
 import java.time.LocalDateTime
+import java.time.ZoneId
 
 /**
- * Каркас класса для планирования напоминаний о задачах.
- * Можно использовать AlarmManager, WorkManager или другие механизмы.
+ * Класс для планирования уведомлений о задачах с использованием AlarmManager.
  */
 class TaskNotificationManager(private val context: Context) {
 
     /**
-     * Запланировать локальное напоминание на указанное время.
+     * Запланировать уведомление для задачи с указанным taskId.
+     *
+     * @param taskId Идентификатор задачи.
+     * @param time Время, когда должно сработать уведомление (например, за 5 минут до начала).
      */
+    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
     fun scheduleNotification(taskId: String, time: LocalDateTime) {
-        // Пример использования AlarmManager (упрощённо)
+        // Получаем AlarmManager из системы.
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // В реальном проекте надо подготовить PendingIntent с BroadcastReceiver
-        // либо Service, который сработает в нужное время и покажет уведомление.
-        val intent = Intent(context, /* ВашReceiverКласс::class.java */ javaClass)
-        intent.putExtra("TASK_ID", taskId)
+        // Создаем Intent, который будет отправлен Receiver'у.
+        val intent = Intent(context, TaskNotificationReceiver::class.java).apply {
+            putExtra("TASK_ID", taskId)
+        }
 
-        // pendingIntent — просто пример
+        // Для возможности планирования нескольких уведомлений (если нужно),
+        // можно использовать уникальный requestCode, например, на основе taskId.hashCode().
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            0,
+            taskId.hashCode(), // уникальный requestCode для каждого taskId
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Преобразование LocalDateTime в millis
-        // (в реальном проекте используем TimeZone, Instant и т.д.)
-        val triggerTime = time.atZone(java.time.ZoneId.systemDefault()).toEpochSecond() * 1000
+        // Конвертируем LocalDateTime в миллисекунды.
+        val triggerTime = time.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
 
-        // Настраиваем AlarmManager
+        // Планируем уведомление с точным временем.
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
             triggerTime,
@@ -45,15 +51,18 @@ class TaskNotificationManager(private val context: Context) {
     }
 
     /**
-     * Отменить напоминание.
+     * Отменить запланированное уведомление для задачи.
+     *
+     * @param taskId Идентификатор задачи.
      */
     fun cancelNotification(taskId: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, /* ВашReceiverКласс::class.java */ javaClass)
-        intent.putExtra("TASK_ID", taskId)
+        val intent = Intent(context, TaskNotificationReceiver::class.java).apply {
+            putExtra("TASK_ID", taskId)
+        }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            0,
+            taskId.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.*
+import java.util.UUID
 
 /**
  * Репозиторий для работы с задачами и шаблонами задач.
@@ -34,6 +34,13 @@ class TaskRepository(
 
     fun getTasksForDate(date: LocalDate): Flow<List<Task>> =
         taskDao.getTasksForDate(date)
+
+    /**
+     * Новый метод для вставки задачи, сгенерированной вне репозитория.
+     */
+    suspend fun insertTask(task: Task) {
+        taskDao.insertTask(task)
+    }
 
     suspend fun addTask(
         title: String,
@@ -82,12 +89,11 @@ class TaskRepository(
         taskDao.deleteTask(task)
     }
 
-    // Новый метод: удаление всех задач за выбранную дату
     suspend fun deleteAllTasksForDate(date: LocalDate) {
         taskDao.deleteTasksForDate(date)
     }
 
     suspend fun markTaskDone(taskId: String, done: Boolean) {
-        // TODO: Реализация, если нужна (например, updateTask с новым флагом isDone)
+        // TODO: Реализация, если понадобится
     }
 }

@@ -1,38 +1,74 @@
 package com.myprojects.routinemanager.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.*
+import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import com.myprojects.routinemanager.data.model.Task
+import com.myprojects.routinemanager.data.model.getCategoryColor
+import java.time.format.DateTimeFormatter
 
 /**
- * Экран деталей задачи.
- * Вызывается при нажатии на задачу в списке.
+ * Экран с детальной информацией о задаче.
+ *
+ * @param task Модель задачи.
+ * @param onBack Колбэк для кнопки "Назад".
+ * @param onToggleTaskDone Колбэк для переключения состояния задачи (выполнена/не выполнена).
+ * @param onSubtaskToggle Колбэк для переключения состояния подзадачи.
+ * @param onConcentrationMode Колбэк для перехода в режим концентрации.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskDetailScreen(
-    viewModel: TaskViewModel,
-    taskId: String,
-    onBack: () -> Unit
+    task: Task,
+    onBack: () -> Unit,
+    onToggleTaskDone: (Task) -> Unit,
+    onSubtaskToggle: (Task, subtaskIndex: Int) -> Unit,
+    onConcentrationMode: () -> Unit
 ) {
-    // Получаем список всех задач
-    val taskList by viewModel.tasks.collectAsState()
-    // Ищем нужную задачу по ID (в реальном проекте ViewModel может иметь метод getTaskById)
-    val currentTask = taskList.find { it.id == taskId }
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    // Локальное состояние для немедленного обновления UI
+    var currentTask by remember { mutableStateOf(task) }
 
     Scaffold(
         topBar = {
@@ -41,75 +77,199 @@ fun TaskDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Назад"
                         )
                     }
                 }
             )
-        }
-    ) { padding ->
-        if (currentTask == null) {
-            // Если задача не найдена
-            Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-                Text("Задача не найдена")
-            }
-        } else {
-            DetailContent(
-                task = currentTask,
-                onSave = { updated ->
-                    viewModel.updateTask(updated) // Сохраняем изменения
-                    onBack()
-                },
-                onBack = onBack,
-                modifier = Modifier.padding(padding).fillMaxSize()
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailContent(
-    task: Task,
-    onSave: (Task) -> Unit,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var title by remember { mutableStateOf(task.title) }
-    var description by remember { mutableStateOf(task.description ?: "") }
-
-    Column(
-        modifier = modifier.padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        TextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Название") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        TextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Описание") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = {
-                    val updatedTask = task.copy(title = title, description = description)
-                    onSave(updatedTask)
-                }
+        },
+        bottomBar = {
+            // Нижняя панель со строкой кнопок: для выполнения задачи и для режима концентрации
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
+                tonalElevation = 3.dp
             ) {
-                Text("Сохранить")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledTonalButton(onClick = { onToggleTaskDone(currentTask) }) {
+                        val label =
+                            if (currentTask.isDone) "Снять выполнение" else "Выполнить задачу"
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = label,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = label)
+                    }
+                    FilledTonalButton(onClick = onConcentrationMode) {
+                        Icon(
+                            imageVector = Icons.Filled.Alarm,
+                            contentDescription = "Режим концентрации",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "Режим концентрации")
+                    }
+                }
             }
-            OutlinedButton(onClick = onBack) {
-                Text("Отмена")
+        }
+    ) { innerPadding ->
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Заголовок задачи с иконкой
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Assignment,
+                            contentDescription = "Название задачи",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = currentTask.title,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Блок описания с иконкой
+                    if (!currentTask.description.isNullOrEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Article,
+                                contentDescription = "Описание",
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Описание:",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = currentTask.description!!,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // Блок времени с иконкой
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Schedule,
+                            contentDescription = "Время",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            if (currentTask.startTime != null) {
+                                Text(
+                                    text = "Начало: ${currentTask.startTime!!.format(timeFormatter)}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                            if (currentTask.endTime != null) {
+                                Text(
+                                    text = "Окончание: ${currentTask.endTime!!.format(timeFormatter)}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Блок категории с иконкой (оставляем как есть)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Категория: ",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(getCategoryColor(currentTask.category))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = currentTask.category.name,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Блок подзадач с иконкой
+                    if (currentTask.subtasks.isNotEmpty()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.List,
+                                contentDescription = "Подзадачи",
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Подзадачи:",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        currentTask.subtasks.forEachIndexed { index, subtask ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Checkbox(
+                                    checked = subtask.isDone,
+                                    onCheckedChange = {
+                                        onSubtaskToggle(currentTask, index)
+                                        // Обновляем локальное состояние для мгновенного отражения изменений
+                                        val updatedSubtasks =
+                                            currentTask.subtasks.mapIndexed { i, s ->
+                                                if (i == index) s.copy(isDone = !s.isDone) else s
+                                            }
+                                        currentTask = currentTask.copy(subtasks = updatedSubtasks)
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = subtask.title,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,20 +1,22 @@
 package com.myprojects.routinemanager
 
+import android.app.AlarmManager
+import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.navigation.compose.rememberNavController
 import com.myprojects.routinemanager.ui.navigation.AppNavGraph
 import com.myprojects.routinemanager.ui.theme.RoutineManagerTheme
-import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
+import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * Главная activity приложения.
- * Использует Hilt для предоставления ViewModel и запускает граф навигации.
- */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
@@ -23,6 +25,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Проверяем разрешение на точные будильники (требуется на Android 12+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                showExactAlarmPermissionDialog()
+            }
+        }
 
         setContent {
             RoutineManagerTheme {
@@ -35,5 +45,20 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun showExactAlarmPermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Разрешите точные будильники")
+            .setMessage(
+                "Для корректной работы уведомлений разрешите приложению использовать точные будильники. " +
+                        "Перейдите в настройки и включите соответствующий доступ."
+            )
+            .setPositiveButton("Настройки") { _, _ ->
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                startActivity(intent)
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
     }
 }

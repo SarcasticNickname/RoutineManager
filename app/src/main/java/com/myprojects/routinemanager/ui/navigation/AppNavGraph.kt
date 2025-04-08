@@ -1,15 +1,24 @@
 package com.myprojects.routinemanager.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.myprojects.routinemanager.ui.screens.*
+import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
+import com.myprojects.routinemanager.ui.screens.AddTaskRootScreen
+import com.myprojects.routinemanager.ui.screens.AddTaskScreen
+import com.myprojects.routinemanager.ui.screens.ConcentrationModeScreen
+import com.myprojects.routinemanager.ui.screens.DayTemplatesScreen
+import com.myprojects.routinemanager.ui.screens.EditDayTemplateScreen
+import com.myprojects.routinemanager.ui.screens.SettingsScreen
+import com.myprojects.routinemanager.ui.screens.TaskDetailScreen
+import com.myprojects.routinemanager.ui.screens.TaskListScreen
+import com.myprojects.routinemanager.ui.screens.TemplateDetailScreen
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
+import com.myprojects.routinemanager.ui.viewmodel.SettingsViewModel
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import java.time.LocalDate
-import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
-
 
 @Composable
 fun AppNavGraph(
@@ -19,21 +28,20 @@ fun AppNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.TaskList.toString()
+        startDestination = NavRoutes.TaskList.route
     ) {
-        composable(NavRoutes.TaskList.toString()) {
+        composable(NavRoutes.TaskList.route) {
             TaskListScreen(
                 viewModel = taskViewModel,
-                onAddTaskClick = { navController.navigate(NavRoutes.AddTask.toString()) },
+                onAddTaskClick = { navController.navigate(NavRoutes.AddTask.route) },
                 onTaskClick = { taskId ->
-                    navController.navigate("${NavRoutes.TaskDetail}/$taskId")
+                    navController.navigate("${NavRoutes.TaskDetail.route}/$taskId")
                 },
                 navController = navController
             )
         }
 
-        composable(NavRoutes.AddTask.toString()) {
-            // Новый экран для создания задачи (пустая форма)
+        composable(NavRoutes.AddTask.route) {
             AddTaskScreen(
                 viewModel = taskViewModel,
                 onTaskAdded = { navController.popBackStack() }
@@ -43,7 +51,6 @@ fun AppNavGraph(
         composable("edit_task/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")
             if (taskId != null) {
-                // Экран редактирования задачи с предзаполненными данными
                 AddTaskScreen(
                     viewModel = taskViewModel,
                     onTaskAdded = { navController.popBackStack() },
@@ -52,13 +59,20 @@ fun AppNavGraph(
             }
         }
 
-        composable("${NavRoutes.TaskDetail}/{taskId}") { backStackEntry ->
+        composable("${NavRoutes.TaskDetail.route}/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
-            TaskDetailScreen(
-                viewModel = taskViewModel,
-                taskId = taskId,
-                onBack = { navController.popBackStack() }
-            )
+            val task = taskViewModel.getTaskById(taskId)
+            if (task != null) {
+                TaskDetailScreen(
+                    task = task,
+                    onBack = { navController.popBackStack() },
+                    onToggleTaskDone = { t -> taskViewModel.toggleTaskDone(t) },
+                    onSubtaskToggle = { t, index -> taskViewModel.toggleSubtask(t, index) },
+                    onConcentrationMode = {
+                        navController.navigate(NavRoutes.ConcentrationMode.route)
+                    }
+                )
+            }
         }
 
         composable("add_root") {
@@ -71,7 +85,6 @@ fun AppNavGraph(
         composable("day_templates?date={date}") { backStackEntry ->
             val dateArg = backStackEntry.arguments?.getString("date")
             val selectedDate = dateArg?.let { LocalDate.parse(it) } ?: LocalDate.now()
-
             DayTemplatesScreen(
                 viewModel = dayTemplateViewModel,
                 onApplyTemplate = { template ->
@@ -82,10 +95,7 @@ fun AppNavGraph(
                 onOpenDetails = { template ->
                     navController.navigate("template_detail/${template.template.id}")
                 },
-                onCreateCustomTemplate = {
-                    // Создание нового пользовательского шаблона
-                    navController.navigate("edit_template")
-                },
+                onCreateCustomTemplate = { navController.navigate("edit_template") },
                 onDeleteTemplate = { template: DayTemplateWithTasks ->
                     dayTemplateViewModel.deleteTemplate(template.template)
                 },
@@ -118,6 +128,21 @@ fun AppNavGraph(
             EditDayTemplateScreen(
                 viewModel = dayTemplateViewModel,
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(NavRoutes.Settings.route) {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            SettingsScreen(
+                settingsViewModel = settingsViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // Новый маршрут для режима концентрации
+        composable(NavRoutes.ConcentrationMode.route) {
+            ConcentrationModeScreen(
+                onDisable = { navController.popBackStack() }
             )
         }
     }

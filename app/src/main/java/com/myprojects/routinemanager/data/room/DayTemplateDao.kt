@@ -1,6 +1,11 @@
 package com.myprojects.routinemanager.data.room
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
 import com.myprojects.routinemanager.data.model.DayTemplate
 import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
 import com.myprojects.routinemanager.data.model.TaskTemplate
