@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import com.myprojects.routinemanager.data.model.DayTemplateWithTasks
 import com.myprojects.routinemanager.ui.screens.AddTaskRootScreen
 import com.myprojects.routinemanager.ui.screens.AddTaskScreen
+import com.myprojects.routinemanager.ui.screens.BackupScreen
 import com.myprojects.routinemanager.ui.screens.ConcentrationModeScreen
 import com.myprojects.routinemanager.ui.screens.DayTemplatesScreen
 import com.myprojects.routinemanager.ui.screens.EditDayTemplateScreen
@@ -144,6 +145,10 @@ fun AppNavGraph(
             ConcentrationModeScreen(
                 onDisable = { navController.popBackStack() }
             )
+        }
+
+        composable("backup") {
+            BackupScreen(navController = navController, taskViewModel = taskViewModel)
         }
     }
 }

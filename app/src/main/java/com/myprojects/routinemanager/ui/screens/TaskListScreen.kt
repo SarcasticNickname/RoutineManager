@@ -125,10 +125,11 @@ fun TaskListScreen(
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )
                 NavigationDrawerItem(
-                    label = { Text("О приложении") },
+                    label = { Text("Бэкап задач") },
                     selected = false,
                     onClick = {
                         coroutineScope.launch { drawerState.close() }
+                        navController.navigate("backup")
                     },
                     modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                 )

@@ -1,3 +1,4 @@
+# === Android Studio files ===
 *.iml
 .gradle
 /local.properties
@@ -8,8 +9,25 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
+
+# === Build output ===
 /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+
+google-services.json
+firebase-debug.log
+
+# === Kotlin ===
+*.kotlin_module
+
+# === OS generated ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# === Other ===
+*.log
+*.swp
+.idea/misc.xml

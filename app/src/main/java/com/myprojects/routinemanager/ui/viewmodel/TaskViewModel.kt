@@ -29,9 +29,11 @@ import javax.inject.Inject
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
-    private val dayTemplateRepository: DayTemplateRepository,
+    val dayTemplateRepository: DayTemplateRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
+
+    val taskRepository = repository
 
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()

@@ -85,7 +85,7 @@ fun TaskDetailScreen(
             )
         },
         bottomBar = {
-            // Нижняя панель со строкой кнопок: для выполнения задачи и для режима концентрации
+            // В нижней панели оставляем только кнопку выполнения задачи
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
@@ -95,7 +95,7 @@ fun TaskDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     FilledTonalButton(onClick = { onToggleTaskDone(currentTask) }) {
@@ -109,29 +109,22 @@ fun TaskDetailScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = label)
                     }
-                    FilledTonalButton(onClick = onConcentrationMode) {
-                        Icon(
-                            imageVector = Icons.Filled.Alarm,
-                            contentDescription = "Режим концентрации",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Режим концентрации")
-                    }
                 }
             }
         }
     ) { innerPadding ->
-        Surface(
+        // Основная колонка со всем содержимым
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Карточка с деталями задачи
             Card(
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(4.dp),
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
                     .padding(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -205,7 +198,7 @@ fun TaskDetailScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Блок категории с иконкой (оставляем как есть)
+                    // Блок категории
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "Категория: ",
@@ -225,7 +218,7 @@ fun TaskDetailScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Блок подзадач с иконкой
+                    // Блок подзадач
                     if (currentTask.subtasks.isNotEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -249,13 +242,13 @@ fun TaskDetailScreen(
                                 Checkbox(
                                     checked = subtask.isDone,
                                     onCheckedChange = {
-                                        onSubtaskToggle(currentTask, index)
-                                        // Обновляем локальное состояние для мгновенного отражения изменений
+                                        // Обновляем локальное состояние, затем вызываем колбэк
                                         val updatedSubtasks =
                                             currentTask.subtasks.mapIndexed { i, s ->
                                                 if (i == index) s.copy(isDone = !s.isDone) else s
                                             }
                                         currentTask = currentTask.copy(subtasks = updatedSubtasks)
+                                        onSubtaskToggle(currentTask, index)
                                     },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = MaterialTheme.colorScheme.primary
@@ -269,6 +262,25 @@ fun TaskDetailScreen(
                             }
                         }
                     }
+                }
+            }
+
+            // Кнопка "Режим концентрации" снизу под карточкой
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                FilledTonalButton(onClick = onConcentrationMode) {
+                    Icon(
+                        imageVector = Icons.Filled.Alarm,
+                        contentDescription = "Режим концентрации",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Режим концентрации")
                 }
             }
         }

@@ -67,4 +67,8 @@ class DayTemplateRepository(
         dayTemplateDao.insertTaskTemplate(withOwner)
     }
 
+    fun getAllDayTemplates(): Flow<List<DayTemplate>> =
+        dayTemplateDao.getAllDayTemplates()
+
+
 }

@@ -15,6 +15,9 @@ import java.time.DayOfWeek
 @Dao
 interface DayTemplateDao {
 
+    @Query("SELECT * FROM day_templates")
+    fun getAllDayTemplates(): Flow<List<DayTemplate>>
+
     @Transaction
     @Query("SELECT * FROM day_templates")
     fun getAllTemplatesWithTasks(): Flow<List<DayTemplateWithTasks>>
