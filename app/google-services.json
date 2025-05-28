@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1060057092428",
+    "project_id": "routinemanagerbackup",
+    "storage_bucket": "routinemanagerbackup.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060057092428:android:e34650a4d6f96f658c3fe9",
+        "android_client_info": {
+          "package_name": "com.myprojects.routinemanager"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1060057092428-31i3d12vv2t2bgc0sprsu8r3ajstqsii.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myprojects.routinemanager",
+            "certificate_hash": "cd9589c3722011677c7f87a0312d4e31788d88f3"
+          }
+        },
+        {
+          "client_id": "1060057092428-lt5bqp19hmek3kodukmlp5t0ufhcctv1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCST6cT5pFHWuaeKTE7bHvE6WG6trFLtjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1060057092428-lt5bqp19hmek3kodukmlp5t0ufhcctv1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

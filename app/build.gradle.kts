@@ -77,6 +77,7 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
 
     implementation(libs.hilt.android)
+    implementation(libs.androidx.compose.material)
     kapt(libs.hilt.compiler)
 
     // Room
@@ -104,5 +105,4 @@ dependencies {
     // "One Tap" из Play Services
     implementation (libs.firebase.ui.auth)
     implementation(libs.play.services.auth.v2070)
-
 }

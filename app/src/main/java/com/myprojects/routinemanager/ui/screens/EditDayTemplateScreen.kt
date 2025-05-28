@@ -1,25 +1,10 @@
 package com.myprojects.routinemanager.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -38,10 +23,10 @@ fun EditDayTemplateScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Создать шаблон") },
+                title = { Text("Создать шаблон дня") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                     }
                 }
             )
@@ -58,26 +43,27 @@ fun EditDayTemplateScreen(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text("Название шаблона") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
+
+            Spacer(modifier = Modifier.weight(1f)) // Push button to bottom
 
             Button(
                 onClick = {
                     val newTemplate = DayTemplate(
                         id = UUID.randomUUID().toString(),
-                        name = name,
-                        taskTemplates = emptyList(),
+                        name = name.trim(),
+                        taskTemplates = emptyList(), // TaskTemplates are added later
                         isWeekly = false,
                         weekday = null
                     )
-                    viewModel.addTemplate(
-                        newTemplate,
-                        tasks = emptyList()
-                    )
+                    // Call addTemplate without the 'tasks' parameter
+                    viewModel.addTemplate(newTemplate)
                     onBack()
                 },
                 enabled = name.isNotBlank(),
-                modifier = Modifier.align(Alignment.End)
+                modifier = Modifier.align(Alignment.End) // Align button to the end
             ) {
                 Text("Создать")
             }

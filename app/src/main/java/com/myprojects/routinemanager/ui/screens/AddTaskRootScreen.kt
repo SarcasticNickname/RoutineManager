@@ -5,24 +5,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel // Import DayTemplateViewModel
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 
 @Composable
 fun AddTaskRootScreen(
-    viewModel: TaskViewModel,
+    taskViewModel: TaskViewModel,
+    dayTemplateViewModel: DayTemplateViewModel, // Add DayTemplateViewModel parameter
     onTaskAdded: () -> Unit,
-    templateId: String? = null
+    templateId: String? = null // ID of the DayTemplate we are adding to
 ) {
     var selectedTab by remember { mutableStateOf(AddTaskTab.NEW) }
 
@@ -46,8 +40,21 @@ fun AddTaskRootScreen(
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when (selectedTab) {
-                AddTaskTab.NEW -> AddTaskScreen(viewModel, onTaskAdded, templateId)
-                AddTaskTab.TEMPLATE -> AddTaskFromTemplateScreen(viewModel, onTaskAdded, templateId)
+                // Navigating to AddTaskScreen to create a new task (potentially linked to templateId)
+                AddTaskTab.NEW -> AddTaskScreen(
+                    viewModel = taskViewModel,
+                    onTaskAdded = onTaskAdded,
+                    taskId = null, // Not editing
+                    templateId = templateId, // Pass DayTemplate ID if available
+                    isCreatingTemplate = false // Not creating a standalone template
+                )
+                // Navigating to AddTaskFromTemplateScreen to pick a template to add
+                AddTaskTab.TEMPLATE -> AddTaskFromTemplateScreen(
+                    taskViewModel = taskViewModel,
+                    dayTemplateViewModel = dayTemplateViewModel, // Pass both ViewModels
+                    onTaskAdded = onTaskAdded,
+                    templateId = templateId // Pass DayTemplate ID if available
+                )
             }
         }
     }

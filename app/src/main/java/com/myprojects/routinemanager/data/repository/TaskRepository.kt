@@ -1,6 +1,9 @@
 package com.myprojects.routinemanager.data.repository
 
-import com.myprojects.routinemanager.data.model.*
+import com.myprojects.routinemanager.data.model.Subtask
+import com.myprojects.routinemanager.data.model.Task
+import com.myprojects.routinemanager.data.model.TaskCategory
+import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.data.room.TaskDao
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
@@ -14,19 +17,8 @@ import java.util.UUID
 class TaskRepository(
     private val taskDao: TaskDao
 ) {
-    // Пример одиночных шаблонов задач (в будущем может заменяться на БД)
-    private val templateList = listOf(
-        TaskTemplate(
-            templateId = "tpl1",
-            defaultTitle = "Подъём в 7:00",
-            defaultDescription = "Проверить почту, позавтракать"
-        ),
-        TaskTemplate(
-            templateId = "tpl2",
-            defaultTitle = "Лечь в 23:00",
-            defaultDescription = "Подготовить одежду на завтра"
-        )
-    )
+    // Шаблонных заданий по умолчанию больше нет.
+    private val templateList = emptyList<TaskTemplate>()
 
     fun getAllTemplates(): List<TaskTemplate> = templateList
 
@@ -85,6 +77,10 @@ class TaskRepository(
         taskDao.updateTask(task)
     }
 
+    suspend fun updateTasks(tasks: List<Task>) {
+        taskDao.updateTasks(tasks)
+    }
+
     suspend fun deleteTask(task: Task) {
         taskDao.deleteTask(task)
     }
@@ -93,7 +89,16 @@ class TaskRepository(
         taskDao.deleteTasksForDate(date)
     }
 
+
+    suspend fun deleteAllTasks() {
+        taskDao.deleteAllTasks()
+    }
+
     suspend fun markTaskDone(taskId: String, done: Boolean) {
-        // TODO: Реализация, если понадобится
+        val task = taskDao.getTaskById(taskId)
+        if (task != null) {
+            val updatedTask = task.copy(isDone = done)
+            taskDao.updateTask(updatedTask)
+        }
     }
 }
