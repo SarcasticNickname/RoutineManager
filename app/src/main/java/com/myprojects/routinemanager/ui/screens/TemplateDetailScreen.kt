@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.data.model.getCategoryColor
+import com.myprojects.routinemanager.ui.screens.components.formatTimeRange
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

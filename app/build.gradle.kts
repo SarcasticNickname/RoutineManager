@@ -74,7 +74,7 @@ dependencies {
     // Навигация
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation(libs.hilt.navigation.compose)
 
     implementation(libs.hilt.android)
     implementation(libs.androidx.compose.material)
@@ -103,6 +103,9 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     // "One Tap" из Play Services
-    implementation (libs.firebase.ui.auth)
+    implementation(libs.firebase.ui.auth)
     implementation(libs.play.services.auth.v2070)
+
+
+    implementation(libs.reorderable)
 }

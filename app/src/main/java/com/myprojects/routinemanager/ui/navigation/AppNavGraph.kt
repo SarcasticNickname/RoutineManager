@@ -30,9 +30,6 @@ fun AppNavGraph(
                 viewModel = taskViewModel,
                 navController = navController,
                 onAddTaskClick = { navController.navigate(NavRoutes.AddTask.route) }, // Navigate to AddTaskRoot
-                onTaskClick = { taskId ->
-                    navController.navigate("${NavRoutes.TaskDetail.route}/$taskId")
-                }
             )
         }
 
