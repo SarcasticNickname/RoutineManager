@@ -11,7 +11,13 @@ import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.room.STANDALONE_TASK_TEMPLATE_HOLDER_ID
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -21,7 +27,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DayTemplateViewModel @Inject constructor(
-    private val repository: DayTemplateRepository
+    val repository: DayTemplateRepository
 ) : ViewModel() {
 
     // Internal flow holding all templates with tasks, used for filtering weekly/custom
@@ -47,7 +53,10 @@ class DayTemplateViewModel @Inject constructor(
         viewModelScope.launch {
             // Collect DayTemplateWithTasks for weekly/custom filtering using collectLatest
             repository.getAllTemplates().collectLatest { allTemplates ->
-                Log.d("DayTemplateVM", "Updating DayTemplateWithTasks flow, count: ${allTemplates.size}")
+                Log.d(
+                    "DayTemplateVM",
+                    "Updating DayTemplateWithTasks flow, count: ${allTemplates.size}"
+                )
                 _allTemplatesFlow.value = allTemplates // Update the internal holder flow
                 // Update public filtered flows
                 _weeklyTemplates.value = allTemplates.filter { it.template.isWeekly }
@@ -65,7 +74,9 @@ class DayTemplateViewModel @Inject constructor(
             try {
                 repository.insertTemplate(template.copy(taskTemplates = emptyList()))
                 // Flow updates handled by collectLatest in init
-            } catch (e: Exception) { Log.e("DayTemplateVM", "Error adding DayTemplate", e) }
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error adding DayTemplate", e)
+            }
         }
     }
 
@@ -76,7 +87,9 @@ class DayTemplateViewModel @Inject constructor(
                 // TODO: Implement deletion of associated TaskTemplates if needed
                 repository.deleteTemplate(template)
                 // Flow updates handled by collectLatest
-            } catch (e: Exception) { Log.e("DayTemplateVM", "Error deleting DayTemplate", e) }
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error deleting DayTemplate", e)
+            }
         }
     }
 
@@ -86,15 +99,20 @@ class DayTemplateViewModel @Inject constructor(
             try {
                 repository.deleteTaskTemplate(taskTemplate)
                 // standaloneTaskTemplates flow will update automatically
-            } catch (e: Exception) { Log.e("DayTemplateVM", "Error deleting TaskTemplate", e) }
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error deleting TaskTemplate", e)
+            }
         }
     }
 
     // Applies a DayTemplate to a date
     fun applyTemplate(templateWithTasks: DayTemplateWithTasks, date: LocalDate) {
         viewModelScope.launch {
-            try { repository.applyDayTemplate(templateWithTasks, date) }
-            catch (e: Exception) { Log.e("DayTemplateVM", "Error applying DayTemplate", e) }
+            try {
+                repository.applyDayTemplate(templateWithTasks, date)
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error applying DayTemplate", e)
+            }
         }
     }
 
@@ -118,7 +136,9 @@ class DayTemplateViewModel @Inject constructor(
                 )
                 repository.insertTaskTemplate(templateToInsert)
                 // _allTemplatesFlow updates via collectLatest if templateId is visible
-            } catch (e: Exception) { Log.e("DayTemplateVM", "Error adding TaskTemplate to DayTemplate", e) }
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error adding TaskTemplate to DayTemplate", e)
+            }
         }
     }
 
@@ -138,7 +158,45 @@ class DayTemplateViewModel @Inject constructor(
             try {
                 repository.insertTaskTemplate(newTaskTemplate)
                 // standaloneTaskTemplates flow will update automatically
-            } catch (e: Exception) { Log.e("DayTemplateVM", "Error creating standalone task template", e) }
+            } catch (e: Exception) {
+                Log.e("DayTemplateVM", "Error creating standalone task template", e)
+            }
+        }
+    }
+
+
+    fun addTaskToDayTemplate(
+        templateId: String, title: String, description: String?,
+        category: TaskCategory, startTime: LocalTime?, endTime: LocalTime?,
+        subtasks: List<Subtask>
+    ) {
+        viewModelScope.launch {
+            val taskTemplate = TaskTemplate(
+                id = UUID.randomUUID().toString(),
+                templateId = templateId,
+                defaultTitle = title, defaultDescription = description, category = category,
+                defaultStartTime = startTime, defaultEndTime = endTime,
+                subtasks = subtasks // <-- Теперь типы совпадают, преобразование не нужно
+            )
+            try {
+                repository.insertTaskTemplate(taskTemplate)
+            } catch (e: Exception) {
+                Log.e("DayTemplateViewModel", "Error adding task template to day template", e)
+            }
+        }
+    }
+
+    fun addTaskToDayTemplate(templateId: String, template: TaskTemplate) {
+        viewModelScope.launch {
+            try {
+                repository.insertTaskTemplate(template.copy(templateId = templateId))
+            } catch (e: Exception) {
+                Log.e(
+                    "TaskViewModel",
+                    "Error adding task template object to day template via repository",
+                    e
+                )
+            }
         }
     }
 

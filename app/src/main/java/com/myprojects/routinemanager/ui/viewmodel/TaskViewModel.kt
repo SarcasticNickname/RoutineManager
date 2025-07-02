@@ -9,9 +9,7 @@ import com.myprojects.routinemanager.data.model.Subtask
 import com.myprojects.routinemanager.data.model.Task
 import com.myprojects.routinemanager.data.model.TaskCategory
 import com.myprojects.routinemanager.data.model.TaskTemplate
-import com.myprojects.routinemanager.data.repository.DayTemplateRepository
 import com.myprojects.routinemanager.data.repository.TaskRepository
-import com.myprojects.routinemanager.data.room.STANDALONE_TASK_TEMPLATE_HOLDER_ID
 import com.myprojects.routinemanager.datastore.SettingsDataStore
 import com.myprojects.routinemanager.util.TaskNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -43,7 +41,6 @@ data class MonthlyStats(
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val repository: TaskRepository,
-    val dayTemplateRepository: DayTemplateRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -348,65 +345,6 @@ class TaskViewModel @Inject constructor(
     }
 
     fun getTaskById(taskId: String): Task? = _tasks.value.find { it.id == taskId }
-
-    fun createStandaloneTaskTemplate(
-        title: String, description: String?, category: TaskCategory,
-        startTime: LocalTime?, endTime: LocalTime?, subtasks: List<Subtask>
-    ) {
-        viewModelScope.launch {
-            val newTaskTemplate = TaskTemplate(
-                id = UUID.randomUUID().toString(),
-                templateId = STANDALONE_TASK_TEMPLATE_HOLDER_ID,
-                defaultTitle = title, defaultDescription = description,
-                defaultStartTime = startTime, defaultEndTime = endTime,
-                category = category, subtasks = subtasks
-            )
-            try {
-                dayTemplateRepository.insertTaskTemplate(newTaskTemplate)
-            } catch (e: Exception) {
-                Log.e("TaskViewModel", "Error creating standalone task template via repository", e)
-            }
-        }
-    }
-
-    fun addTaskTemplateToTemplate(
-        templateId: String, title: String, description: String?,
-        category: TaskCategory, startTime: LocalTime?, endTime: LocalTime?,
-        subtasks: List<String>
-    ) {
-        viewModelScope.launch {
-            val taskTemplate = TaskTemplate(
-                id = UUID.randomUUID().toString(),
-                templateId = templateId,
-                defaultTitle = title, defaultDescription = description, category = category,
-                defaultStartTime = startTime, defaultEndTime = endTime,
-                subtasks = subtasks.map { Subtask(it) }
-            )
-            try {
-                dayTemplateRepository.insertTaskTemplate(taskTemplate)
-            } catch (e: Exception) {
-                Log.e(
-                    "TaskViewModel",
-                    "Error adding task template to day template via repository",
-                    e
-                )
-            }
-        }
-    }
-
-    fun addTaskTemplateToTemplate(templateId: String, template: TaskTemplate) {
-        viewModelScope.launch {
-            try {
-                dayTemplateRepository.insertTaskTemplate(template.copy(templateId = templateId))
-            } catch (e: Exception) {
-                Log.e(
-                    "TaskViewModel",
-                    "Error adding task template object to day template via repository",
-                    e
-                )
-            }
-        }
-    }
 
     fun deleteAllTasksForDate(date: LocalDate) {
         viewModelScope.launch {

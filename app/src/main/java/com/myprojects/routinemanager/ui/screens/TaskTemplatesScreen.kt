@@ -42,7 +42,7 @@ fun TaskTemplatesScreen(
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 // Navigate to AddTaskScreen with the "new_template" marker
-                navController.navigate("add_task/new_template")
+                navController.navigate("create_task_template")
             }) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = "Создать шаблон задачи")
             }

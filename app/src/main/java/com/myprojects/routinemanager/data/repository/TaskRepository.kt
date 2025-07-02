@@ -17,10 +17,6 @@ import java.util.UUID
 class TaskRepository(
     private val taskDao: TaskDao
 ) {
-    // Шаблонных заданий по умолчанию больше нет.
-    private val templateList = emptyList<TaskTemplate>()
-
-    fun getAllTemplates(): List<TaskTemplate> = templateList
 
     fun getAllTasks(): Flow<List<Task>> = taskDao.getAllTasks()
 

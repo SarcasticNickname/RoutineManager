@@ -40,7 +40,6 @@ import java.util.Locale
 fun TaskListScreen(
     viewModel: TaskViewModel,
     navController: NavController,
-    onAddTaskClick: () -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val taskListState by viewModel.tasks.collectAsState()

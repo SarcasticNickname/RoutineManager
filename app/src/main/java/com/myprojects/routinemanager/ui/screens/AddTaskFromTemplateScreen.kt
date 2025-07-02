@@ -9,21 +9,38 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.myprojects.routinemanager.data.model.Subtask // Keep if needed by formatTimeRangeInternal
 import com.myprojects.routinemanager.data.model.TaskTemplate
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
 import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
 import java.time.format.DateTimeFormatter
 
+/**
+ * Composable-функция, содержащая ТОЛЬКО контент для выбора задачи из шаблона.
+ * Не содержит Scaffold или TopAppBar.
+ */
 @Composable
 fun AddTaskFromTemplateScreen(
-    taskViewModel: TaskViewModel, // Needed to add task/template
-    dayTemplateViewModel: DayTemplateViewModel, // Needed to get template list
+    taskViewModel: TaskViewModel,
+    dayTemplateViewModel: DayTemplateViewModel,
     onTaskAdded: () -> Unit,
-    templateId: String? = null // ID of DayTemplate to add to (if not null)
+    templateId: String? = null
 ) {
     // Collect standalone task templates directly from the StateFlow
     val templates by dayTemplateViewModel.standaloneTaskTemplates.collectAsState()
+
+    if (templates.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "У вас пока нет шаблонов задач. Создайте их на экране управления шаблонами.",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+        return
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -37,19 +54,20 @@ fun AddTaskFromTemplateScreen(
         items(templates, key = { it.id }) { template ->
             TemplateItem(template = template) {
                 if (templateId == null) {
-                    // Create a regular task from this TaskTemplate
+                    // Создаем обычную задачу из этого шаблона
                     taskViewModel.addTaskFromTemplate(template)
                 } else {
-                    // Add this existing TaskTemplate to the specified DayTemplate
-                    taskViewModel.addTaskTemplateToTemplate(templateId, template)
+                    // Добавляем существующий шаблон задачи в указанный шаблон дня
+                    dayTemplateViewModel.addTaskToDayTemplate(templateId, template)
                 }
-                onTaskAdded() // Go back
+                onTaskAdded() // Возвращаемся назад
             }
         }
     }
 }
 
-// TemplateItem Composable
+// Вспомогательные компоненты (TemplateItem и formatTimeRangeInternal) остаются без изменений.
+
 @Composable
 fun TemplateItem(
     template: TaskTemplate,
@@ -66,7 +84,7 @@ fun TemplateItem(
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = template.defaultTitle, style = MaterialTheme.typography.titleMedium)
                 if (template.defaultStartTime != null || template.defaultEndTime != null) {
-                    val timeString = formatTimeRangeInternal(template.defaultStartTime, template.defaultEndTime) // Use internal helper
+                    val timeString = formatTimeRangeInternal(template.defaultStartTime, template.defaultEndTime)
                     Text(timeString, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
                 }
                 if (!template.defaultDescription.isNullOrBlank()){
@@ -89,7 +107,6 @@ fun TemplateItem(
     }
 }
 
-// Internal helper function to format time range
 @Composable
 private fun formatTimeRangeInternal(start: java.time.LocalTime?, end: java.time.LocalTime?): String {
     val formatter = remember { DateTimeFormatter.ofPattern("HH:mm") }

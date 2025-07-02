@@ -1,4 +1,4 @@
-package com.myprojects.routinemanager.ui.screens
+package com.myprojects.routinemanager.ui.screens.components
 
 import android.app.TimePickerDialog
 import androidx.compose.foundation.background
@@ -11,100 +11,74 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.myprojects.routinemanager.data.model.Subtask
-import com.myprojects.routinemanager.data.model.Task
 import com.myprojects.routinemanager.data.model.TaskCategory
 import com.myprojects.routinemanager.data.model.getCategoryColor
-import com.myprojects.routinemanager.ui.viewmodel.TaskViewModel
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
+/**
+ * Общий "глупый" компонент, содержащий UI формы для создания/редактирования задачи или шаблона.
+ * Он не содержит логики или состояния, а только отображает переданные данные.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskScreen(
-    viewModel: TaskViewModel,
-    onTaskAdded: () -> Unit,
-    taskId: String? = null,
-    templateId: String? = null,
-    isCreatingTemplate: Boolean = false // Flag for creating a standalone TaskTemplate
+fun TaskFormContent(
+    modifier: Modifier = Modifier,
+    headerText: String,
+    title: String,
+    onTitleChange: (String) -> Unit,
+    description: String,
+    onDescriptionChange: (String) -> Unit,
+    selectedCategory: TaskCategory,
+    onCategorySelected: (TaskCategory) -> Unit,
+    startTime: LocalTime?,
+    onStartTimeSelected: (LocalTime) -> Unit,
+    endTime: LocalTime?,
+    onEndTimeSelected: (LocalTime) -> Unit,
+    subtasks: SnapshotStateList<String>,
+    newSubtaskText: String,
+    onNewSubtaskTextChange: (String) -> Unit,
+    onAddSubtask: () -> Unit,
+    onDeleteSubtask: (Int) -> Unit
 ) {
-    val editingTask: Task? = taskId?.let { viewModel.getTaskById(it) }
-
-    // State variables using remember
-    var title by remember { mutableStateOf(editingTask?.title ?: "") }
-    var description by remember { mutableStateOf(editingTask?.description ?: "") }
-    var newSubtaskText by remember { mutableStateOf("") }
-    val subtasks = remember { // List to hold subtask titles (strings)
-        mutableStateListOf<String>().apply {
-            if (editingTask != null) {
-                addAll(editingTask.subtasks.map { it.title })
-            }
-        }
-    }
     var categoryExpanded by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf(editingTask?.category ?: TaskCategory.OTHER) }
-    var startTime by remember { mutableStateOf<LocalTime?>(editingTask?.startTime) }
-    var endTime by remember { mutableStateOf<LocalTime?>(editingTask?.endTime) }
-
-    val invalidTime = remember(startTime, endTime) {
-        startTime != null && endTime != null && startTime!!.isAfter(endTime)
-    }
-    // Use editing task's date if available, otherwise today
-    val selectedDate = remember { editingTask?.date ?: LocalDate.now() }
-
-    // Determine header and button text based on the screen's mode
-    val headerText = when {
-        isCreatingTemplate -> "Создать шаблон задачи"
-        taskId != null -> "Редактировать задачу"
-        templateId != null -> "Добавить в шаблон дня"
-        else -> "Добавить задачу"
-    }
-    val buttonText = when {
-        isCreatingTemplate -> "Сохранить шаблон"
-        templateId != null -> "Добавить в шаблон дня"
-        taskId != null -> "Сохранить изменения"
-        else -> "Добавить задачу"
-    }
-
     val scrollState = rememberScrollState()
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp) // Padding at the bottom
-            .verticalScroll(scrollState), // Make the column scrollable
-        verticalArrangement = Arrangement.spacedBy(16.dp) // Spacing between elements
+            .verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Screen Header
         Text(
             text = headerText,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
         )
 
         // Task Title Input
         OutlinedTextField(
             value = title,
-            onValueChange = { if (it.length <= 40) title = it },
-            label = { Text("Название *") }, // Indicate required field
+            onValueChange = { if (it.length <= 40) onTitleChange(it) },
+            label = { Text("Название *") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            isError = title.isBlank() // Show error if title is empty
+            isError = title.isBlank()
         )
 
         // Task Description Input
         OutlinedTextField(
             value = description,
-            onValueChange = { if (it.length <= 100) description = it },
+            onValueChange = { if (it.length <= 100) onDescriptionChange(it) },
             label = { Text("Описание") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 2,
@@ -121,7 +95,7 @@ fun AddTaskScreen(
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Категория") },
-                leadingIcon = { // Show category color indicator
+                leadingIcon = {
                     Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(getCategoryColor(selectedCategory)))
                 },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
@@ -138,7 +112,7 @@ fun AddTaskScreen(
                             }
                         },
                         onClick = {
-                            selectedCategory = category
+                            onCategorySelected(category)
                             categoryExpanded = false
                         }
                     )
@@ -148,24 +122,20 @@ fun AddTaskScreen(
 
         // Start and End Time Pickers
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(Modifier.weight(1f)) { TimePickerText("Время начала", startTime) { startTime = it } }
-            Column(Modifier.weight(1f)) { TimePickerText("Время конца", endTime) { endTime = it } }
+            Column(Modifier.weight(1f)) { TimePickerText("Время начала", startTime, onTimeSelected = onStartTimeSelected) }
+            Column(Modifier.weight(1f)) { TimePickerText("Время конца", endTime, onTimeSelected = onEndTimeSelected) }
         }
+        val invalidTime = startTime != null && endTime != null && startTime.isAfter(endTime)
         if (invalidTime) {
             Text("Время начала не может быть позже конца", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
 
         // Subtasks Section
         Text("Подзадачи", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
-        SubtaskInputRow( // Use the original SubtaskSection name if preferred
+        SubtaskInputRow(
             newSubtaskText = newSubtaskText,
-            onTextChange = { newSubtaskText = it },
-            onAddClick = {
-                if (newSubtaskText.isNotBlank()) {
-                    subtasks.add(newSubtaskText.trim())
-                    newSubtaskText = ""
-                }
-            }
+            onTextChange = onNewSubtaskTextChange,
+            onAddClick = onAddSubtask
         )
 
         // Display added subtasks
@@ -173,58 +143,15 @@ fun AddTaskScreen(
             subtasks.forEachIndexed { index, subtask ->
                 SubtaskDisplayRow(
                     subtaskText = subtask,
-                    onDeleteClick = { subtasks.removeAt(index) }
+                    onDeleteClick = { onDeleteSubtask(index) }
                 )
                 if (index < subtasks.lastIndex) {
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), thickness = 0.5.dp)
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp)) // Space before the main button
-
-        // Save/Add Button
-        Button(
-            onClick = {
-                val finalTitle = title.trim()
-                val finalDescription = description.trim().ifEmpty { null }
-                // Convert UI list of strings to List<Subtask> only when saving template
-                val finalSubtasksObjects = if (isCreatingTemplate || editingTask != null) subtasks.map { Subtask(it) } else emptyList()
-
-                when {
-                    isCreatingTemplate -> {
-                        viewModel.createStandaloneTaskTemplate( // Call VM to create standalone template
-                            finalTitle, finalDescription, selectedCategory, startTime, endTime, finalSubtasksObjects
-                        )
-                    }
-                    templateId != null -> {
-                        viewModel.addTaskTemplateToTemplate( // Call VM to add to existing DayTemplate
-                            templateId, finalTitle, finalDescription, selectedCategory, startTime, endTime, subtasks.toList() // Pass List<String> here
-                        )
-                    }
-                    taskId != null && editingTask != null -> { // Editing existing Task
-                        val updatedSubtasks = subtasks.map { subtaskTitle ->
-                            val existing = editingTask.subtasks.find { it.title == subtaskTitle }
-                            Subtask(title = subtaskTitle, isDone = existing?.isDone ?: false)
-                        }
-                        val updatedTask = editingTask.copy(
-                            title = finalTitle, description = finalDescription, category = selectedCategory,
-                            startTime = startTime, endTime = endTime, subtasks = updatedSubtasks
-                        )
-                        viewModel.updateTask(updatedTask)
-                    }
-                    else -> { // Creating a new regular Task
-                        viewModel.addTask( // Pass List<String> here
-                            finalTitle, finalDescription, selectedCategory, startTime, endTime, selectedDate, subtasks.toList()
-                        )
-                    }
-                }
-                onTaskAdded() // Navigate back after action
-            },
-            enabled = title.isNotBlank() && !invalidTime,
-            modifier = Modifier.fillMaxWidth() // Button takes full width
-        ) {
-            Text(buttonText)
         }
     }
 }
@@ -253,7 +180,7 @@ private fun TimePickerText(label: String, time: LocalTime?, onTimeSelected: (Loc
                 textDecoration = TextDecoration.Underline
             )
         )
-        Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 

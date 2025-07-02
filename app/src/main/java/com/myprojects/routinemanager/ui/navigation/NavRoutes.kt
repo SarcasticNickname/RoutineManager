@@ -6,7 +6,6 @@ package com.myprojects.routinemanager.ui.navigation
 sealed class NavRoutes(val route: String) {
     object TaskList : NavRoutes("task_list")
     object AddTask : NavRoutes("add_task")
-    object TaskDetail : NavRoutes("task_detail")
     object Settings : NavRoutes("settings")
     object ConcentrationMode : NavRoutes("concentration_mode")
 }

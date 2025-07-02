@@ -1,13 +1,14 @@
 package com.myprojects.routinemanager.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.myprojects.routinemanager.data.model.DayTemplateWithTasks // Keep if used elsewhere or for clarity
 import com.myprojects.routinemanager.ui.screens.*
 import com.myprojects.routinemanager.ui.viewmodel.DayTemplateViewModel
 import com.myprojects.routinemanager.ui.viewmodel.SettingsViewModel
@@ -18,110 +19,78 @@ import java.time.LocalDate
 fun AppNavGraph(
     navController: NavHostController,
     taskViewModel: TaskViewModel,
-    dayTemplateViewModel: DayTemplateViewModel // Passed from MainActivity
+    dayTemplateViewModel: DayTemplateViewModel
 ) {
+    // Получаем текущую выбранную дату из ViewModel для передачи на экран создания
+    val tasksState by taskViewModel.tasks.collectAsState()
+    val selectedDate = tasksState.firstOrNull()?.date ?: LocalDate.now()
+
     NavHost(
         navController = navController,
         startDestination = NavRoutes.TaskList.route
     ) {
-        // Main task list screen
+        // --- Главный экран ---
         composable(NavRoutes.TaskList.route) {
             TaskListScreen(
                 viewModel = taskViewModel,
                 navController = navController,
-                onAddTaskClick = { navController.navigate(NavRoutes.AddTask.route) }, // Navigate to AddTaskRoot
             )
         }
 
-        // Root screen for adding tasks (choosing New or Template from FAB)
+        // --- Экран-контейнер для добавления задачи (с вкладками) ---
         composable(NavRoutes.AddTask.route) {
             AddTaskRootScreen(
+                navController = navController,
                 taskViewModel = taskViewModel,
-                dayTemplateViewModel = dayTemplateViewModel, // Pass DayTemplateViewModel
-                onTaskAdded = { navController.popBackStack() },
-                templateId = null // Not adding to a specific DayTemplate here
+                dayTemplateViewModel = dayTemplateViewModel,
+                selectedDate = selectedDate
             )
         }
 
-        // Route for AddTaskScreen (used for editing Task and creating standalone TaskTemplate)
+        // --- Редактирование существующей Задачи ---
+        // Этот маршрут остается, так как на него есть прямой переход из TaskItem
         composable(
-            route = "add_task/{taskId}", // Accepts "new_template" or an actual task ID
+            route = "edit_task/{taskId}",
             arguments = listOf(navArgument("taskId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val taskIdArg = backStackEntry.arguments?.getString("taskId")
-            val isCreatingTemplate = taskIdArg == "new_template" // Check marker for template creation
-            val actualTaskId = if (isCreatingTemplate) null else taskIdArg // Determine actual task ID
-
-            AddTaskScreen(
-                viewModel = taskViewModel, // TaskViewModel handles saving logic
-                onTaskAdded = { navController.popBackStack() },
-                taskId = actualTaskId,
-                templateId = null, // Not adding to a specific DayTemplate in this mode
-                isCreatingTemplate = isCreatingTemplate // Pass the flag
-            )
-        }
-
-        // Route for editing an existing task (explicitly goes to AddTaskScreen)
-        composable("edit_task/{taskId}") { backStackEntry ->
             val taskId = backStackEntry.arguments?.getString("taskId")
             if (taskId != null) {
-                AddTaskScreen(
+                EditTaskScreen(
                     viewModel = taskViewModel,
-                    onTaskAdded = { navController.popBackStack() },
                     taskId = taskId,
-                    templateId = null,
-                    isCreatingTemplate = false // Explicitly not creating a template
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
         }
 
-        // Task details screen
-        composable("${NavRoutes.TaskDetail.route}/{taskId}") { backStackEntry ->
-            val taskId = backStackEntry.arguments?.getString("taskId") ?: return@composable
-            val task = taskViewModel.getTaskById(taskId) // Fetch task data
-            if (task != null) {
-                TaskDetailScreen(
-                    task = task,
-                    onBack = { navController.popBackStack() },
-                    onToggleTaskDone = { t -> taskViewModel.toggleTaskDone(t) },
-                    onSubtaskToggle = { t, index -> taskViewModel.toggleSubtask(t, index) },
-                    onConcentrationMode = { navController.navigate(NavRoutes.ConcentrationMode.route) }
-                )
-            } else {
-                navController.popBackStack() // Go back if task is somehow not found
-            }
-        }
-
-        // Route for adding a task TO a specific DayTemplate (uses AddTaskRootScreen)
-        composable("add_task_to_template/{templateId}") { backStackEntry ->
-            val templateId = backStackEntry.arguments?.getString("templateId")
-            AddTaskRootScreen( // Goes through AddTaskRootScreen first
-                taskViewModel = taskViewModel,
-                dayTemplateViewModel = dayTemplateViewModel, // Pass DayTemplateViewModel
-                templateId = templateId, // Pass the DayTemplate ID
-                onTaskAdded = { navController.popBackStack() }
-            )
-        }
-
-        // Day templates screen (for applying to a date) - Now passes TaskViewModel
-        composable("day_templates?date={date}") { backStackEntry ->
-            val dateArg = backStackEntry.arguments?.getString("date")
-            val selectedDate = dateArg?.let { LocalDate.parse(it) } ?: LocalDate.now()
+        // --- Управление шаблонами ДНЯ (список) ---
+        composable("manage_templates") {
             DayTemplatesScreen(
-                taskViewModel = taskViewModel, // Pass TaskViewModel for task checking
+                taskViewModel = taskViewModel,
                 dayTemplateViewModel = dayTemplateViewModel,
                 navController = navController,
-                selectedDateForApply = selectedDate, // Pass the date to apply to
-                onApplyTemplate = { /* Logic is now internal to DayTemplatesScreen */ },
+                selectedDateForApply = null, // Не в режиме применения
                 onOpenDetails = { template -> navController.navigate("template_detail/${template.template.id}") },
-                onCreateCustomTemplate = { navController.navigate("edit_template") },
-                onDeleteTemplate = { template -> dayTemplateViewModel.deleteTemplate(template.template) },
-                showApplyButton = true // Show the apply button
+                onCreateCustomTemplate = { navController.navigate("create_day_template") },
+                showApplyButton = false,
+                onApplyTemplate = { },
+                onDeleteTemplate = { template -> dayTemplateViewModel.deleteTemplate(template.template) }
             )
         }
 
-        // Day template details screen
-        composable("template_detail/{templateId}") { backStackEntry ->
+        // --- Создание нового шаблона ДНЯ ---
+        composable("create_day_template") {
+            EditDayTemplateScreen(
+                viewModel = dayTemplateViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        // --- Детали шаблона ДНЯ (со списком его задач) ---
+        composable(
+            route = "template_detail/{templateId}",
+            arguments = listOf(navArgument("templateId") { type = NavType.StringType })
+        ) { backStackEntry ->
             val templateId = backStackEntry.arguments?.getString("templateId")
             if (templateId != null) {
                 TemplateDetailScreen(
@@ -133,38 +102,57 @@ fun AppNavGraph(
             }
         }
 
-        // Screen for creating a new DAY template
-        composable("edit_template") {
-            EditDayTemplateScreen(
-                viewModel = dayTemplateViewModel,
-                onBack = { navController.popBackStack() }
-            )
+        // --- Создание новой Задачи ВНУТРИ шаблона ДНЯ ---
+        composable(
+            route = "add_task_to_template/{templateId}",
+            arguments = listOf(navArgument("templateId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val templateId = backStackEntry.arguments?.getString("templateId")
+            if (templateId != null) {
+                AddTaskToTemplateScreen(
+                    viewModel = dayTemplateViewModel,
+                    dayTemplateId = templateId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
 
-        // Screen for managing DAY templates (no apply button) - Now passes TaskViewModel
-        composable("manage_templates") {
-            DayTemplatesScreen(
-                taskViewModel = taskViewModel, // Pass TaskViewModel
-                dayTemplateViewModel = dayTemplateViewModel,
-                navController = navController,
-                selectedDateForApply = null, // No date context for applying
-                onApplyTemplate = { /* No action */ },
-                onOpenDetails = { template -> navController.navigate("template_detail/${template.template.id}") },
-                onCreateCustomTemplate = { navController.navigate("edit_template") },
-                onDeleteTemplate = { template -> dayTemplateViewModel.deleteTemplate(template.template) },
-                showApplyButton = false // Hide apply button
-            )
-        }
-
-        // Screen for managing standalone TASK templates
-        composable("task_template") {
+        // --- Управление шаблонами ЗАДАЧ (список одиночных) ---
+        composable("manage_task_templates") {
             TaskTemplatesScreen(
-                dayTemplateViewModel = dayTemplateViewModel, // Provides the templates
+                dayTemplateViewModel = dayTemplateViewModel,
                 navController = navController
             )
         }
 
-        // Settings screen
+        // --- Создание нового шаблона ЗАДАЧИ ---
+        composable("create_task_template") {
+            CreateTaskTemplateScreen(
+                viewModel = dayTemplateViewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // --- Экран применения шаблона ДНЯ к дате ---
+        composable("day_templates?date={date}") { backStackEntry ->
+            val dateArg = backStackEntry.arguments?.getString("date")
+            val date = dateArg?.let { LocalDate.parse(it) } ?: LocalDate.now()
+            DayTemplatesScreen(
+                taskViewModel = taskViewModel,
+                dayTemplateViewModel = dayTemplateViewModel,
+                navController = navController,
+                selectedDateForApply = date,
+                onOpenDetails = { template -> navController.navigate("template_detail/${template.template.id}") },
+                onCreateCustomTemplate = { navController.navigate("create_day_template") },
+                showApplyButton = true,
+                onApplyTemplate = { template ->
+                    dayTemplateViewModel.applyTemplate(template, date)
+                    navController.popBackStack()
+                },
+                onDeleteTemplate = { template -> dayTemplateViewModel.deleteTemplate(template.template) }
+            )
+        }
+
         composable(NavRoutes.Settings.route) {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             SettingsScreen(
@@ -173,24 +161,20 @@ fun AppNavGraph(
             )
         }
 
-        // Concentration mode screen
         composable(NavRoutes.ConcentrationMode.route) {
-            ConcentrationModeScreen(
-                onDisable = { navController.popBackStack() }
-            )
+            ConcentrationModeScreen(onDisable = { navController.popBackStack() })
         }
 
-        // Backup screen
         composable("backup") {
-            BackupScreen(navController = navController, taskViewModel = taskViewModel)
+            BackupScreen(
+                navController = navController,
+                taskViewModel = taskViewModel,
+                dayTemplateViewModel = dayTemplateViewModel
+            )
         }
 
-        // Statistics screen
         composable("statistics") {
-            StatisticsScreen(
-                navController = navController,
-                taskViewModel = taskViewModel // Use existing injected instance
-            )
+            StatisticsScreen(navController = navController, taskViewModel = taskViewModel)
         }
     }
 }
